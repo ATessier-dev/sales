@@ -1,0 +1,28 @@
+import type { Translation } from "./types";
+
+export const posTranslations: Record<string, Translation> = {
+  title: { en: "Register", fr: "Caisse" },
+  searchPlaceholder: { en: "Search an item...", fr: "Rechercher un article..." },
+  cart: { en: "Cart", fr: "Panier" },
+  emptyCart: { en: "No item selected yet", fr: "Aucun article sélectionné" },
+  subtotal: { en: "Subtotal", fr: "Sous-total" },
+  gst: { en: "GST", fr: "TPS" },
+  qst: { en: "QST", fr: "TVQ" },
+  total: { en: "Total", fr: "Total" },
+  paymentMethod: { en: "Payment method", fr: "Mode de paiement" },
+  cash: { en: "Cash", fr: "Comptant" },
+  card: { en: "Card", fr: "Carte" },
+  cardConfirmHint: {
+    en: "Charge the amount on the card terminal, then confirm here once accepted.",
+    fr: "Encaissez le montant au terminal, puis confirmez ici une fois accepté.",
+  },
+  requiresDelivery: { en: "Requires delivery", fr: "Livraison requise" },
+  deliveryNotePlaceholder: { en: "Delivery note (address, instructions...)", fr: "Note de livraison (adresse, instructions...)" },
+  submit: { en: "Complete sale", fr: "Enregistrer la vente" },
+  submitError: { en: "Could not save the sale, please try again.", fr: "Impossible d'enregistrer la vente, réessayez." },
+  saleSaved: { en: "Sale recorded", fr: "Vente enregistrée" },
+  newSale: { en: "New sale", fr: "Nouvelle vente" },
+  noArticles: { en: "No item in the catalog yet.", fr: "Aucun article au catalogue pour le moment." },
+  addToCart: { en: "Add", fr: "Ajouter" },
+  removeFromCart: { en: "Remove", fr: "Retirer" },
+};

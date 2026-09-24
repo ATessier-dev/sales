@@ -1,0 +1,151 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  // No `url` here — Prisma 7 removed it from schema.prisma. The CLI's own
+  // connection (db push / migrate / introspect) is configured in
+  // prisma.config.ts instead. The app's runtime client reads the same
+  // DATABASE_URL (a Neon connection string) via @prisma/adapter-neon (see
+  // lib/withPrisma.ts).
+}
+
+enum EmployeeRole {
+  EMPLOYEE
+  SUPERUSER
+}
+
+/// Le TPE encaisse la carte séparément de l'app (pas d'intégration Clover en
+/// v1) — CARD ne fait qu'enregistrer que l'employé a confirmé l'encaissement.
+enum PaymentMethod {
+  CASH
+  CARD
+}
+
+enum ArticleType {
+  ORIGINAL
+  PRINT
+  OTHER
+}
+
+/// Users et employees sont la même entité, comme dans clockin — tout compte
+/// pouvant se connecter est un Employee, distingué seulement par `role`.
+model Employee {
+  id        String       @id @default(cuid())
+  code      String       @unique
+  codeHash  String       @map("code_hash")
+  firstName String       @map("first_name")
+  lastName  String       @map("last_name")
+  role      EmployeeRole @default(EMPLOYEE)
+  locale    String       @default("fr")
+  /// Soft-disable plutôt que suppression, pour que les Sale historiques
+  /// gardent une référence employé valide.
+  active    Boolean      @default(true)
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+
+  sales Sale[]
+
+  @@map("employees")
+}
+
+/// Catalogue superviseur des artistes de la galerie. Le taux de commission
+/// est un pourcentage (ex. 30.00 = 30%), copié figé sur chaque SaleItem au
+/// moment de la vente pour qu'un changement ultérieur ne modifie pas
+/// rétroactivement une vente déjà enregistrée.
+model Artist {
+  id              String   @id @default(cuid())
+  name            String
+  commissionRate  Decimal  @db.Decimal(5, 2) @map("commission_rate")
+  active          Boolean  @default(true)
+  sortOrder       Int      @default(0) @map("sort_order")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  articles Article[]
+
+  @@map("artists")
+}
+
+/// Catalogue superviseur des articles en vente (œuvre originale, print...).
+/// Prix en Decimal (jamais Float) pour éviter les erreurs d'arrondi sur de
+/// l'argent.
+model Article {
+  id        String      @id @default(cuid())
+  title     String
+  type      ArticleType @default(ORIGINAL)
+  price     Decimal     @db.Decimal(10, 2)
+  /// Faux pour un article exempté de taxes (rare, mais prévu par les notes
+  /// métier). Vrai par défaut : la majorité des articles sont taxables.
+  taxable   Boolean     @default(true)
+  active    Boolean     @default(true)
+  sortOrder Int         @default(0) @map("sort_order")
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+
+  /// Optionnel : un article peut ne pas (encore) avoir d'artiste assigné,
+  /// et supprimer un artiste ne doit pas empêcher de garder son catalogue.
+  artistId String?  @map("artist_id")
+  artist   Artist?  @relation(fields: [artistId], references: [id], onDelete: SetNull)
+
+  saleItems SaleItem[]
+
+  @@map("articles")
+}
+
+/// Une transaction complète (une ou plusieurs lignes). Les montants sont
+/// recalculés côté serveur à partir des Article/Artist actuels au moment de
+/// la création — jamais depuis les valeurs envoyées par le client.
+model Sale {
+  id               String        @id @default(cuid())
+  employeeId       String        @map("employee_id")
+  employee         Employee      @relation(fields: [employeeId], references: [id])
+  paymentMethod    PaymentMethod @map("payment_method")
+  subtotal         Decimal       @db.Decimal(10, 2)
+  gstAmount        Decimal       @db.Decimal(10, 2) @map("gst_amount")
+  qstAmount        Decimal       @db.Decimal(10, 2) @map("qst_amount")
+  /// subtotal + gstAmount + qstAmount, dénormalisé pour éviter de le
+  /// recalculer à chaque affichage de l'historique des ventes.
+  total            Decimal       @db.Decimal(10, 2)
+  requiresDelivery Boolean       @default(false) @map("requires_delivery")
+  deliveryNote     String?       @db.Text @map("delivery_note")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  items SaleItem[]
+
+  @@index([createdAt])
+  @@index([employeeId])
+  @@map("sales")
+}
+
+/// Une ligne de vente. Tout ce qui vient de Article/Artist est dupliqué ici
+/// au moment de la vente (titre, prix, artiste, taux et montant de
+/// commission) : un prix ou un taux modifié plus tard ne doit jamais changer
+/// rétroactivement une vente déjà enregistrée.
+model SaleItem {
+  id      String @id @default(cuid())
+  saleId  String @map("sale_id")
+  sale    Sale   @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  /// Optionnel : garder la ligne même si l'article catalogue est supprimé
+  /// plus tard.
+  articleId    String?  @map("article_id")
+  article      Article? @relation(fields: [articleId], references: [id], onDelete: SetNull)
+  articleTitle String   @map("article_title")
+  unitPrice    Decimal  @db.Decimal(10, 2) @map("unit_price")
+  quantity     Int      @default(1)
+
+  artistId          String?  @map("artist_id")
+  artistName        String?  @map("artist_name")
+  commissionRate    Decimal? @db.Decimal(5, 2) @map("commission_rate")
+  commissionAmount  Decimal? @db.Decimal(10, 2) @map("commission_amount")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([saleId])
+  @@index([artistId])
+  @@map("sale_items")
+}
