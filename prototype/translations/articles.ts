@@ -11,6 +11,8 @@ export const articlesTranslations: Record<string, Translation> = {
   typePrint: { en: "Print", fr: "Print" },
   typeOther: { en: "Other", fr: "Autre" },
   priceLabel: { en: "Price ($)", fr: "Prix ($)" },
+  imageLabel: { en: "Image", fr: "Image" },
+  removeImage: { en: "Remove image", fr: "Retirer l'image" },
   artistLabel: { en: "Artist", fr: "Artiste" },
   noArtist: { en: "No artist", fr: "Aucun artiste" },
   taxableLabel: { en: "Taxable", fr: "Taxable" },

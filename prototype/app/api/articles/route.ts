@@ -40,13 +40,14 @@ export async function POST(request: Request) {
     await requireSuperuser();
 
     const body = (await request.json().catch(() => null)) as
-      | { title?: unknown; type?: unknown; price?: unknown; taxable?: unknown; artistId?: unknown }
+      | { title?: unknown; type?: unknown; price?: unknown; taxable?: unknown; artistId?: unknown; imageUrl?: unknown }
       | null;
     const title = typeof body?.title === "string" ? body.title.trim() : "";
     const type = isArticleType(body?.type) ? body.type : "ORIGINAL";
     const price = typeof body?.price === "number" ? body.price : NaN;
     const taxable = typeof body?.taxable === "boolean" ? body.taxable : true;
     const artistId = typeof body?.artistId === "string" && body.artistId ? body.artistId : null;
+    const imageUrl = typeof body?.imageUrl === "string" && body.imageUrl ? body.imageUrl : null;
 
     if (!title || !Number.isFinite(price) || price < 0) {
       return NextResponse.json({ error: "invalid_body" }, { status: 400 });
@@ -65,7 +66,7 @@ export async function POST(request: Request) {
 
     const article = await withPrisma((prisma) =>
       prisma.article.create({
-        data: { title, type, price, taxable, artistId, sortOrder: (lastArticle?.sortOrder ?? -1) + 1 },
+        data: { title, type, price, taxable, artistId, imageUrl, sortOrder: (lastArticle?.sortOrder ?? -1) + 1 },
         include: { artist: { select: { id: true, name: true } } },
       })
     );

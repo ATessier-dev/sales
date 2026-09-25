@@ -43,6 +43,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ local
     active: article.active,
     artistId: article.artistId,
     artistName: article.artist?.name ?? null,
+    imageUrl: article.imageUrl,
   }));
 
   return (

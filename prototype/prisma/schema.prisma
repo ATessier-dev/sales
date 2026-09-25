@@ -77,6 +77,9 @@ model Article {
   title     String
   type      ArticleType @default(ORIGINAL)
   price     Decimal     @db.Decimal(10, 2)
+  /// URL Vercel Blob de la photo de l'article (même mécanisme que artur pour
+  /// les médias uploadés). Nullable : un article peut ne pas avoir de photo.
+  imageUrl  String?     @map("image_url")
   /// Faux pour un article exempté de taxes (rare, mais prévu par les notes
   /// métier). Vrai par défaut : la majorité des articles sont taxables.
   taxable   Boolean     @default(true)

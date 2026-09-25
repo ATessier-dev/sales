@@ -18,6 +18,7 @@ export type ArticleForPos = {
   price: number;
   taxable: boolean;
   artistName: string | null;
+  imageUrl: string | null;
 };
 
 type CartLine = { article: ArticleForPos; quantity: number };
@@ -152,11 +153,21 @@ export function PosView({ language, articles }: { language: Language; articles: 
               <Card key={article.id}>
                 <CardContent className="flex flex-col gap-2 p-4">
                   <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="font-medium leading-tight">{article.title}</p>
-                      {article.artistName && (
-                        <p className="text-xs text-muted-foreground">{article.artistName}</p>
+                    <div className="flex items-start gap-2">
+                      {article.imageUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={article.imageUrl}
+                          alt=""
+                          className="h-12 w-12 shrink-0 rounded-md border border-border object-cover"
+                        />
                       )}
+                      <div>
+                        <p className="font-medium leading-tight">{article.title}</p>
+                        {article.artistName && (
+                          <p className="text-xs text-muted-foreground">{article.artistName}</p>
+                        )}
+                      </div>
                     </div>
                     <span className="whitespace-nowrap text-sm font-semibold">
                       {article.price.toFixed(2)} $

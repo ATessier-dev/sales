@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-import { Trash2 } from "lucide-react";
+import { useState, type ChangeEvent, type FormEvent } from "react";
+import { upload } from "@vercel/blob/client";
+import { Trash2, ImageOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +20,7 @@ export type ArticleEntry = {
   active: boolean;
   artistId: string | null;
   artistName: string | null;
+  imageUrl: string | null;
 };
 
 const typeOptions: { value: ArticleType; labelKey: "typeOriginal" | "typePrint" | "typeOther" }[] = [
@@ -48,10 +50,32 @@ export function ArticleForm({
   const [artistId, setArtistId] = useState(initialValues?.artistId ?? "");
   const [taxable, setTaxable] = useState(initialValues?.taxable ?? true);
   const [active, setActive] = useState(initialValues?.active ?? true);
+  const [imageUrl, setImageUrl] = useState<string | null>(initialValues?.imageUrl ?? null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [error, setError] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const isEditing = Boolean(initialValues);
+
+  async function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    setUploadingImage(true);
+    setError(false);
+    try {
+      const blob = await upload(file.name, file, {
+        access: "public",
+        handleUploadUrl: "/api/articles/image-upload",
+      });
+      setImageUrl(blob.url);
+    } catch {
+      setError(true);
+    } finally {
+      setUploadingImage(false);
+    }
+  }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -68,6 +92,7 @@ export function ArticleForm({
         taxable,
         active,
         artistId: artistId || null,
+        imageUrl,
       }),
     });
 
@@ -79,7 +104,17 @@ export function ArticleForm({
     }
 
     const data = (await response.json()) as {
-      article: { id: string; title: string; type: ArticleType; price: string; taxable: boolean; active: boolean; artistId: string | null; artist: { name: string } | null };
+      article: {
+        id: string;
+        title: string;
+        type: ArticleType;
+        price: string;
+        taxable: boolean;
+        active: boolean;
+        artistId: string | null;
+        artist: { name: string } | null;
+        imageUrl: string | null;
+      };
     };
     onSaved({
       id: data.article.id,
@@ -90,6 +125,7 @@ export function ArticleForm({
       active: data.article.active,
       artistId: data.article.artistId,
       artistName: data.article.artist?.name ?? null,
+      imageUrl: data.article.imageUrl,
     });
   }
 
@@ -112,6 +148,42 @@ export function ArticleForm({
 
   return (
     <form onSubmit={handleSubmit} className="w-full space-y-3 rounded-lg border border-border bg-card p-4">
+      <div className="space-y-1">
+        <Label htmlFor="article-image">{getTranslation(articlesTranslations.imageLabel, language)}</Label>
+        <div className="flex items-center gap-3">
+          {imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={imageUrl} alt="" className="h-16 w-16 rounded-md border border-border object-cover" />
+          ) : (
+            <div className="flex h-16 w-16 items-center justify-center rounded-md border border-dashed border-border text-muted-foreground">
+              <ImageOff className="h-5 w-5" aria-hidden="true" />
+            </div>
+          )}
+          <div className="flex flex-col gap-1">
+            <Input
+              id="article-image"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleImageChange}
+              disabled={uploadingImage}
+              className="max-w-xs"
+            />
+            {imageUrl && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="w-fit"
+                onClick={() => setImageUrl(null)}
+                disabled={uploadingImage}
+              >
+                {getTranslation(articlesTranslations.removeImage, language)}
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+
       <div className="space-y-1">
         <Label htmlFor="article-title">{getTranslation(articlesTranslations.titleLabel, language)}</Label>
         <Input id="article-title" value={title} onChange={(event) => setTitle(event.target.value)} required autoFocus />

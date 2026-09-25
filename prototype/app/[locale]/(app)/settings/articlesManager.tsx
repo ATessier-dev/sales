@@ -62,16 +62,30 @@ export function ArticlesManager({
           articles.map((article) => (
             <Card key={article.id} className="w-full">
               <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                <CardTitle className="flex flex-col gap-0.5 text-sm">
-                  <span>
-                    {article.title}
-                    {!article.active ? " · inactif" : ""}
-                  </span>
-                  <span className="text-xs font-normal text-muted-foreground">
-                    {article.price.toFixed(2)} $
-                    {article.artistName ? ` — ${article.artistName}` : ""}
-                  </span>
-                </CardTitle>
+                <div className="flex items-center gap-3">
+                  {article.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={article.imageUrl}
+                      alt=""
+                      className="h-10 w-10 rounded-md border border-border object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-10 w-10 items-center justify-center rounded-md border border-dashed border-border text-muted-foreground">
+                      <ImageIcon className="h-4 w-4" aria-hidden="true" />
+                    </div>
+                  )}
+                  <CardTitle className="flex flex-col gap-0.5 text-sm">
+                    <span>
+                      {article.title}
+                      {!article.active ? " · inactif" : ""}
+                    </span>
+                    <span className="text-xs font-normal text-muted-foreground">
+                      {article.price.toFixed(2)} $
+                      {article.artistName ? ` — ${article.artistName}` : ""}
+                    </span>
+                  </CardTitle>
+                </div>
                 <Button variant="outline" size="sm" onClick={() => setFormMode(article)}>
                   <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
                   {getTranslation(articlesTranslations.editArticle, language)}

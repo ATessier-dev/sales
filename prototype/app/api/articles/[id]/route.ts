@@ -27,6 +27,7 @@ export async function PATCH(request: Request, { params }: RouteContext<"/api/art
           taxable?: unknown;
           active?: unknown;
           artistId?: unknown;
+          imageUrl?: unknown;
         }
       | null;
 
@@ -44,6 +45,12 @@ export async function PATCH(request: Request, { params }: RouteContext<"/api/art
           ? body.artistId
           : null
         : undefined;
+    const imageUrl =
+      body && "imageUrl" in body
+        ? typeof body.imageUrl === "string" && body.imageUrl
+          ? body.imageUrl
+          : null
+        : undefined;
 
     if (body && "title" in body && !title) {
       return NextResponse.json({ error: "invalid_body" }, { status: 400 });
@@ -59,7 +66,7 @@ export async function PATCH(request: Request, { params }: RouteContext<"/api/art
     const article = await withPrisma((prisma) =>
       prisma.article.update({
         where: { id },
-        data: { title, type, price, taxable, active, artistId },
+        data: { title, type, price, taxable, active, artistId, imageUrl },
         include: { artist: { select: { id: true, name: true } } },
       })
     );

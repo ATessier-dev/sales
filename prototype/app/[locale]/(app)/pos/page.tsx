@@ -23,6 +23,7 @@ export default async function PosPage({ params }: { params: Promise<{ locale: st
     price: Number(article.price),
     taxable: article.taxable,
     artistName: article.artist?.name ?? null,
+    imageUrl: article.imageUrl,
   }));
 
   return (
