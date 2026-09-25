@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { PageHeading } from "@/components/ui/pageHeading";
 import { GST_RATE, QST_RATE, roundToCents } from "@/lib/tax";
 import { getTranslation, posTranslations, articlesTranslations, type Language } from "@/translations";
+import { articleImageSrc } from "@/lib/articleImage";
 
 export type ArticleForPos = {
   id: string;
@@ -157,7 +158,7 @@ export function PosView({ language, articles }: { language: Language; articles: 
                       {article.imageUrl && (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
-                          src={article.imageUrl}
+                          src={articleImageSrc(article.imageUrl)}
                           alt=""
                           className="h-12 w-12 shrink-0 rounded-md border border-border object-cover"
                         />

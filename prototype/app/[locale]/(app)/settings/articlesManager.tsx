@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PageHeading } from "@/components/ui/pageHeading";
 import { getTranslation, articlesTranslations, type Language } from "@/translations";
+import { articleImageSrc } from "@/lib/articleImage";
 import { ArticleForm, type ArticleEntry } from "./editArticle";
 import type { ArtistEntry } from "./editArtist";
 
@@ -66,7 +67,7 @@ export function ArticlesManager({
                   {article.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={article.imageUrl}
+                      src={articleImageSrc(article.imageUrl)}
                       alt=""
                       className="h-10 w-10 rounded-md border border-border object-cover"
                     />

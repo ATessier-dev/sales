@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getTranslation, articlesTranslations, type Language } from "@/translations";
+import { articleImageSrc } from "@/lib/articleImage";
 import type { ArtistEntry } from "./editArtist";
 
 export type ArticleType = "ORIGINAL" | "PRINT" | "OTHER";
@@ -66,7 +67,7 @@ export function ArticleForm({
     setError(false);
     try {
       const blob = await upload(file.name, file, {
-        access: "public",
+        access: "private",
         handleUploadUrl: "/api/articles/image-upload",
       });
       setImageUrl(blob.url);
@@ -153,7 +154,7 @@ export function ArticleForm({
         <div className="flex items-center gap-3">
           {imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={imageUrl} alt="" className="h-16 w-16 rounded-md border border-border object-cover" />
+            <img src={articleImageSrc(imageUrl)} alt="" className="h-16 w-16 rounded-md border border-border object-cover" />
           ) : (
             <div className="flex h-16 w-16 items-center justify-center rounded-md border border-dashed border-border text-muted-foreground">
               <ImageOff className="h-5 w-5" aria-hidden="true" />
