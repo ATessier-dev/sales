@@ -1,8 +1,17 @@
+import { config as loadEnv } from "dotenv";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
 import { hashCode } from "../lib/auth-utils";
+
+// Unlike `next dev`, running this script via `tsx` loads no .env file on its
+// own — and a naive `source .env.local` in bash mis-parses a Neon URL's
+// unescaped `&` (channel_binding=require&sslmode=require) as a background
+// job separator, silently truncating DATABASE_URL. dotenv's parser has none
+// of that shell-quoting hazard, so load it the same way prisma.config.ts does.
+loadEnv({ path: ".env.local" });
+loadEnv();
 
 neonConfig.webSocketConstructor = ws;
 
@@ -43,19 +52,37 @@ async function main() {
   const roy = await prisma.artist.upsert({
     where: { id: "seed-artist-roy" },
     update: {},
-    create: { id: "seed-artist-roy", name: "Camille Roy", commissionRate: 30, sortOrder: 0 },
+    create: { id: "seed-artist-roy", name: "Camille Roy", sortOrder: 0 },
   });
 
   const bergeron = await prisma.artist.upsert({
     where: { id: "seed-artist-bergeron" },
     update: {},
-    create: { id: "seed-artist-bergeron", name: "Julien Bergeron", commissionRate: 40, sortOrder: 1 },
+    create: { id: "seed-artist-bergeron", name: "Julien Bergeron", sortOrder: 1 },
   });
 
   const gagnon = await prisma.artist.upsert({
     where: { id: "seed-artist-gagnon" },
     update: {},
-    create: { id: "seed-artist-gagnon", name: "Marie-Ève Gagnon", commissionRate: 35, sortOrder: 2 },
+    create: { id: "seed-artist-gagnon", name: "Marie-Ève Gagnon", sortOrder: 2 },
+  });
+
+  await prisma.commission.upsert({
+    where: { id: "seed-commission-studio" },
+    update: {},
+    create: { id: "seed-commission-studio", title: "Atelier de l'artiste", rate: 30, sortOrder: 0 },
+  });
+
+  await prisma.commission.upsert({
+    where: { id: "seed-commission-gallery" },
+    update: {},
+    create: { id: "seed-commission-gallery", title: "Trouvée en galerie", rate: 40, sortOrder: 1 },
+  });
+
+  await prisma.commission.upsert({
+    where: { id: "seed-commission-consignment" },
+    update: {},
+    create: { id: "seed-commission-consignment", title: "Consignation externe", rate: 50, sortOrder: 2 },
   });
 
   await prisma.article.upsert({
@@ -111,7 +138,7 @@ async function main() {
     },
   });
 
-  console.log("Seeded 2 comptes de test (EMP001 / SUP001) + 3 artistes + 4 articles.");
+  console.log("Seeded 2 comptes de test (EMP001 / SUP001) + 3 artistes + 3 commissions + 4 articles.");
 }
 
 main()

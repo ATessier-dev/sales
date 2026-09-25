@@ -21,6 +21,7 @@ export type ReportItem = {
   quantity: number;
   artistId: string | null;
   artistName: string | null;
+  commissionTitle: string | null;
   commissionAmount: number | null;
 };
 
@@ -157,7 +158,8 @@ export function ReportsView({ language, items }: { language: Language; items: Re
                         {(item.unitPrice * item.quantity).toFixed(2)} $
                         {item.commissionAmount !== null && (
                           <span className="ml-2 text-xs">
-                            ({getTranslation(salesTranslations.commission, language)}: {item.commissionAmount.toFixed(2)} $)
+                            ({getTranslation(salesTranslations.commission, language)}: {item.commissionAmount.toFixed(2)} $
+                            {item.commissionTitle ? ` · ${item.commissionTitle}` : ""})
                           </span>
                         )}
                       </span>

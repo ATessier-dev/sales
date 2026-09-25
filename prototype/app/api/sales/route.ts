@@ -10,7 +10,7 @@ function isPaymentMethod(value: unknown): value is PaymentMethod {
   return typeof value === "string" && (PAYMENT_METHODS as readonly string[]).includes(value);
 }
 
-type CartItemInput = { articleId: string; quantity: number };
+type CartItemInput = { articleId: string; quantity: number; commissionId: string | null };
 
 function parseItems(value: unknown): CartItemInput[] | null {
   if (!Array.isArray(value) || value.length === 0) return null;
@@ -19,8 +19,9 @@ function parseItems(value: unknown): CartItemInput[] | null {
   for (const raw of value) {
     const articleId = typeof raw?.articleId === "string" ? raw.articleId : "";
     const quantity = typeof raw?.quantity === "number" ? raw.quantity : NaN;
+    const commissionId = typeof raw?.commissionId === "string" && raw.commissionId ? raw.commissionId : null;
     if (!articleId || !Number.isInteger(quantity) || quantity < 1) return null;
-    items.push({ articleId, quantity });
+    items.push({ articleId, quantity, commissionId });
   }
   return items;
 }
@@ -85,7 +86,7 @@ export async function POST(request: Request) {
     const articles = await withPrisma((prisma) =>
       prisma.article.findMany({
         where: { id: { in: articleIds } },
-        include: { artist: { select: { id: true, name: true, commissionRate: true } } },
+        include: { artist: { select: { id: true, name: true } } },
       })
     );
 
@@ -94,11 +95,32 @@ export async function POST(request: Request) {
     }
     const articleById = new Map(articles.map((article) => [article.id, article]));
 
+    const commissionIds = [
+      ...new Set(items.map((item) => item.commissionId).filter((id): id is string => id !== null)),
+    ];
+    const commissions = commissionIds.length
+      ? await withPrisma((prisma) => prisma.commission.findMany({ where: { id: { in: commissionIds } } }))
+      : [];
+    const commissionById = new Map(commissions.map((commission) => [commission.id, commission]));
+
+    // Une ligne dont l'article a un artiste doit obligatoirement porter une
+    // commission choisie par l'employé (voir la liste Commissions côté
+    // /settings) ; une ligne sans artiste n'en prend jamais.
+    for (const item of items) {
+      const article = articleById.get(item.articleId)!;
+      if (article.artist && !item.commissionId) {
+        return NextResponse.json({ error: "commission_required" }, { status: 400 });
+      }
+      if (item.commissionId && !commissionById.has(item.commissionId)) {
+        return NextResponse.json({ error: "commission_not_found" }, { status: 400 });
+      }
+    }
+
     // Tout est recalculé ici à partir du catalogue actuel — jamais depuis un
     // prix envoyé par le client — puis figé sur chaque SaleItem.
     let subtotal = 0;
     let taxableSubtotal = 0;
-    const saleItemsData = items.map(({ articleId, quantity }) => {
+    const saleItemsData = items.map(({ articleId, quantity, commissionId }) => {
       const article = articleById.get(articleId)!;
       const unitPrice = Number(article.price);
       const lineTotal = roundToCents(unitPrice * quantity);
@@ -107,7 +129,8 @@ export async function POST(request: Request) {
         taxableSubtotal = roundToCents(taxableSubtotal + lineTotal);
       }
 
-      const commissionRate = article.artist ? Number(article.artist.commissionRate) : null;
+      const commission = article.artist && commissionId ? (commissionById.get(commissionId) ?? null) : null;
+      const commissionRate = commission ? Number(commission.rate) : null;
       const commissionAmount = commissionRate !== null ? roundToCents(lineTotal * (commissionRate / 100)) : null;
 
       return {
@@ -117,6 +140,8 @@ export async function POST(request: Request) {
         quantity,
         artistId: article.artist?.id ?? null,
         artistName: article.artist?.name ?? null,
+        commissionId: commission?.id ?? null,
+        commissionTitle: commission?.title ?? null,
         commissionRate,
         commissionAmount,
       };

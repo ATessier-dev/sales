@@ -23,13 +23,10 @@ export async function POST(request: Request) {
   try {
     await requireSuperuser();
 
-    const body = (await request.json().catch(() => null)) as
-      | { name?: unknown; commissionRate?: unknown }
-      | null;
+    const body = (await request.json().catch(() => null)) as { name?: unknown } | null;
     const name = typeof body?.name === "string" ? body.name.trim() : "";
-    const commissionRate = typeof body?.commissionRate === "number" ? body.commissionRate : NaN;
 
-    if (!name || !Number.isFinite(commissionRate) || commissionRate < 0 || commissionRate > 100) {
+    if (!name) {
       return NextResponse.json({ error: "invalid_body" }, { status: 400 });
     }
 
@@ -39,7 +36,7 @@ export async function POST(request: Request) {
 
     const artist = await withPrisma((prisma) =>
       prisma.artist.create({
-        data: { name, commissionRate, sortOrder: (lastArtist?.sortOrder ?? -1) + 1 },
+        data: { name, sortOrder: (lastArtist?.sortOrder ?? -1) + 1 },
       })
     );
 

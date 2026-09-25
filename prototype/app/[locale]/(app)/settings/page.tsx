@@ -4,6 +4,7 @@ import { redirect } from "@/i18n/navigation";
 import { type Language } from "@/translations";
 import { ArtistsManager } from "./artistsManager";
 import { ArticlesManager } from "./articlesManager";
+import { CommissionsManager } from "./commissionsManager";
 
 export default async function SettingsPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -15,7 +16,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ local
     redirect({ href: "/pos", locale });
   }
 
-  const [artists, articles] = await Promise.all([
+  const [artists, articles, commissions] = await Promise.all([
     withPrisma((prisma) => prisma.artist.findMany({ orderBy: { sortOrder: "asc" } })),
     withPrisma((prisma) =>
       prisma.article.findMany({
@@ -23,6 +24,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ local
         include: { artist: { select: { id: true, name: true } } },
       })
     ),
+    withPrisma((prisma) => prisma.commission.findMany({ orderBy: { sortOrder: "asc" } })),
   ]);
 
   // Decimal n'est pas sérialisable par le RSC boundary — on convertit avant
@@ -30,7 +32,6 @@ export default async function SettingsPage({ params }: { params: Promise<{ local
   const artistsForSettings = artists.map((artist) => ({
     id: artist.id,
     name: artist.name,
-    commissionRate: Number(artist.commissionRate),
     active: artist.active,
   }));
 
@@ -46,6 +47,13 @@ export default async function SettingsPage({ params }: { params: Promise<{ local
     imageUrl: article.imageUrl,
   }));
 
+  const commissionsForSettings = commissions.map((commission) => ({
+    id: commission.id,
+    title: commission.title,
+    rate: Number(commission.rate),
+    active: commission.active,
+  }));
+
   return (
     <main className="mx-auto flex max-w-3xl flex-col items-center gap-6 p-4">
       <ArtistsManager language={language} artists={artistsForSettings} />
@@ -54,6 +62,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ local
         articles={articlesForSettings}
         artists={artistsForSettings.filter((artist) => artist.active)}
       />
+      <CommissionsManager language={language} commissions={commissionsForSettings} />
     </main>
   );
 }

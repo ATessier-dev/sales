@@ -5,6 +5,7 @@ export * from "./sales";
 export * from "./reports";
 export * from "./artists";
 export * from "./articles";
+export * from "./commissions";
 export * from "./settings";
 export type { Language, Translation } from "./types";
 

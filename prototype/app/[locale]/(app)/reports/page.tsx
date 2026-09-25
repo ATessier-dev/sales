@@ -27,6 +27,7 @@ export default async function ReportsPage({ params }: { params: Promise<{ locale
       quantity: item.quantity,
       artistId: item.artistId,
       artistName: item.artistName,
+      commissionTitle: item.commissionTitle,
       commissionAmount: item.commissionAmount !== null ? Number(item.commissionAmount) : null,
     }))
   );

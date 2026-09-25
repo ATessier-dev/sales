@@ -25,4 +25,10 @@ export const posTranslations: Record<string, Translation> = {
   noArticles: { en: "No item in the catalog yet.", fr: "Aucun article au catalogue pour le moment." },
   addToCart: { en: "Add", fr: "Ajouter" },
   removeFromCart: { en: "Remove", fr: "Retirer" },
+  commissionLabel: { en: "Commission", fr: "Commission" },
+  chooseCommission: { en: "Choose a commission...", fr: "Choisir une commission..." },
+  commissionRequiredError: {
+    en: "Choose a commission for every item with an artist before completing the sale.",
+    fr: "Choisissez une commission pour chaque article avec un artiste avant d'enregistrer la vente.",
+  },
 };

@@ -35,6 +35,7 @@ export default async function SalesPage({ params }: { params: Promise<{ locale: 
       unitPrice: Number(item.unitPrice),
       quantity: item.quantity,
       artistName: item.artistName,
+      commissionTitle: item.commissionTitle,
       commissionAmount: item.commissionAmount !== null ? Number(item.commissionAmount) : null,
     })),
   }));

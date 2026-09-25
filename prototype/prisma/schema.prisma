@@ -51,14 +51,13 @@ model Employee {
   @@map("employees")
 }
 
-/// Catalogue superviseur des artistes de la galerie. Le taux de commission
-/// est un pourcentage (ex. 30.00 = 30%), copié figé sur chaque SaleItem au
-/// moment de la vente pour qu'un changement ultérieur ne modifie pas
-/// rétroactivement une vente déjà enregistrée.
+/// Catalogue superviseur des artistes de la galerie. N'a plus de taux de
+/// commission propre : voir Commission, choisie par l'employé à chaque
+/// ligne de vente selon la provenance de l'œuvre plutôt que déduite de
+/// l'artiste.
 model Artist {
   id              String   @id @default(cuid())
   name            String
-  commissionRate  Decimal  @db.Decimal(5, 2) @map("commission_rate")
   active          Boolean  @default(true)
   sortOrder       Int      @default(0) @map("sort_order")
   createdAt       DateTime @default(now()) @map("created_at")
@@ -67,6 +66,25 @@ model Artist {
   articles Article[]
 
   @@map("artists")
+}
+
+/// Catalogue superviseur des provenances (« où l'œuvre a été trouvée ») et du
+/// taux de commission qui leur est associé. La commission d'une vente ne
+/// dépend plus de l'artiste mais de la provenance choisie par l'employé pour
+/// chaque ligne : ce taux n'est jamais exposé côté caisse, seul le titre
+/// l'est (voir app/api/commissions/route.ts).
+model Commission {
+  id        String   @id @default(cuid())
+  title     String
+  rate      Decimal  @db.Decimal(5, 2)
+  active    Boolean  @default(true)
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  saleItems SaleItem[]
+
+  @@map("commissions")
 }
 
 /// Catalogue superviseur des articles en vente (œuvre originale, print...).
@@ -124,10 +142,10 @@ model Sale {
   @@map("sales")
 }
 
-/// Une ligne de vente. Tout ce qui vient de Article/Artist est dupliqué ici
-/// au moment de la vente (titre, prix, artiste, taux et montant de
-/// commission) : un prix ou un taux modifié plus tard ne doit jamais changer
-/// rétroactivement une vente déjà enregistrée.
+/// Une ligne de vente. Tout ce qui vient de Article/Artist/Commission est
+/// dupliqué ici au moment de la vente (titre, prix, artiste, provenance,
+/// taux et montant de commission) : un prix ou un taux modifié plus tard ne
+/// doit jamais changer rétroactivement une vente déjà enregistrée.
 model SaleItem {
   id      String @id @default(cuid())
   saleId  String @map("sale_id")
@@ -141,10 +159,18 @@ model SaleItem {
   unitPrice    Decimal  @db.Decimal(10, 2) @map("unit_price")
   quantity     Int      @default(1)
 
-  artistId          String?  @map("artist_id")
-  artistName        String?  @map("artist_name")
-  commissionRate    Decimal? @db.Decimal(5, 2) @map("commission_rate")
-  commissionAmount  Decimal? @db.Decimal(10, 2) @map("commission_amount")
+  artistId   String? @map("artist_id")
+  artistName String? @map("artist_name")
+
+  /// Provenance choisie par l'employé à la vente, obligatoire dès que la
+  /// ligne a un artiste (voir app/api/sales/route.ts) ; jamais requise sinon.
+  /// Optionnelle en base malgré tout : un article catalogue supprimé plus
+  /// tard ne doit pas invalider la ligne historique.
+  commissionId     String?     @map("commission_id")
+  commission       Commission? @relation(fields: [commissionId], references: [id], onDelete: SetNull)
+  commissionTitle  String?     @map("commission_title")
+  commissionRate   Decimal?    @db.Decimal(5, 2) @map("commission_rate")
+  commissionAmount Decimal?    @db.Decimal(10, 2) @map("commission_amount")
 
   createdAt DateTime @default(now()) @map("created_at")
 
