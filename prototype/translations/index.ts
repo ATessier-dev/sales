@@ -2,6 +2,7 @@ export * from "./login";
 export * from "./navbar";
 export * from "./pos";
 export * from "./sales";
+export * from "./reports";
 export * from "./artists";
 export * from "./articles";
 export * from "./settings";

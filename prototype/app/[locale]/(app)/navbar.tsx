@@ -15,6 +15,7 @@ import { NavLink } from "./navLink";
 const navItems = [
   { href: "/pos", key: "pos" },
   { href: "/sales", key: "sales" },
+  { href: "/reports", key: "reports" },
 ] as const;
 
 const superuserNavItems = [{ href: "/settings", key: "settings" }] as const;
