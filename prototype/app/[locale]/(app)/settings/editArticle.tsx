@@ -9,31 +9,26 @@ import { Label } from "@/components/ui/label";
 import { getTranslation, articlesTranslations, type Language } from "@/translations";
 import { articleImageSrc } from "@/lib/articleImage";
 import type { ArtistEntry } from "./editArtist";
-
-export type ArticleType = "ORIGINAL" | "PRINT" | "OTHER";
+import type { CategoryEntry } from "./editCategory";
 
 export type ArticleEntry = {
   id: string;
   title: string;
-  type: ArticleType;
   price: number;
   taxable: boolean;
   active: boolean;
   artistId: string | null;
   artistName: string | null;
+  categoryId: string | null;
+  categoryName: string | null;
   imageUrl: string | null;
 };
-
-const typeOptions: { value: ArticleType; labelKey: "typeOriginal" | "typePrint" | "typeOther" }[] = [
-  { value: "ORIGINAL", labelKey: "typeOriginal" },
-  { value: "PRINT", labelKey: "typePrint" },
-  { value: "OTHER", labelKey: "typeOther" },
-];
 
 export function ArticleForm({
   language,
   initialValues,
   artists,
+  categories,
   onCancel,
   onSaved,
   onDeleted,
@@ -41,14 +36,15 @@ export function ArticleForm({
   language: Language;
   initialValues?: ArticleEntry;
   artists: ArtistEntry[];
+  categories: CategoryEntry[];
   onCancel: () => void;
   onSaved: (article: ArticleEntry) => void;
   onDeleted: () => void;
 }) {
   const [title, setTitle] = useState(initialValues?.title ?? "");
-  const [type, setType] = useState<ArticleType>(initialValues?.type ?? "ORIGINAL");
   const [price, setPrice] = useState(String(initialValues?.price ?? ""));
   const [artistId, setArtistId] = useState(initialValues?.artistId ?? "");
+  const [categoryId, setCategoryId] = useState(initialValues?.categoryId ?? "");
   const [taxable, setTaxable] = useState(initialValues?.taxable ?? true);
   const [active, setActive] = useState(initialValues?.active ?? true);
   const [imageUrl, setImageUrl] = useState<string | null>(initialValues?.imageUrl ?? null);
@@ -88,11 +84,11 @@ export function ArticleForm({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         title,
-        type,
         price: Number(price),
         taxable,
         active,
         artistId: artistId || null,
+        categoryId: categoryId || null,
         imageUrl,
       }),
     });
@@ -108,24 +104,26 @@ export function ArticleForm({
       article: {
         id: string;
         title: string;
-        type: ArticleType;
         price: string;
         taxable: boolean;
         active: boolean;
         artistId: string | null;
         artist: { name: string } | null;
+        categoryId: string | null;
+        category: { name: string } | null;
         imageUrl: string | null;
       };
     };
     onSaved({
       id: data.article.id,
       title: data.article.title,
-      type: data.article.type,
       price: Number(data.article.price),
       taxable: data.article.taxable,
       active: data.article.active,
       artistId: data.article.artistId,
       artistName: data.article.artist?.name ?? null,
+      categoryId: data.article.categoryId,
+      categoryName: data.article.category?.name ?? null,
       imageUrl: data.article.imageUrl,
     });
   }
@@ -192,16 +190,17 @@ export function ArticleForm({
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
-          <Label htmlFor="article-type">{getTranslation(articlesTranslations.typeLabel, language)}</Label>
+          <Label htmlFor="article-category">{getTranslation(articlesTranslations.categoryLabel, language)}</Label>
           <select
-            id="article-type"
-            value={type}
-            onChange={(event) => setType(event.target.value as ArticleType)}
+            id="article-category"
+            value={categoryId}
+            onChange={(event) => setCategoryId(event.target.value)}
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            {typeOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {getTranslation(articlesTranslations[option.labelKey], language)}
+            <option value="">{getTranslation(articlesTranslations.noCategory, language)}</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
               </option>
             ))}
           </select>

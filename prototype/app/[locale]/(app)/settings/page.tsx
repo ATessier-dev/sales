@@ -5,6 +5,7 @@ import { type Language } from "@/translations";
 import { ArtistsManager } from "./artistsManager";
 import { ArticlesManager } from "./articlesManager";
 import { CommissionsManager } from "./commissionsManager";
+import { CategoriesManager } from "./categoriesManager";
 
 export default async function SettingsPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -16,15 +17,19 @@ export default async function SettingsPage({ params }: { params: Promise<{ local
     redirect({ href: "/pos", locale });
   }
 
-  const [artists, articles, commissions] = await Promise.all([
+  const [artists, articles, commissions, categories] = await Promise.all([
     withPrisma((prisma) => prisma.artist.findMany({ orderBy: { sortOrder: "asc" } })),
     withPrisma((prisma) =>
       prisma.article.findMany({
         orderBy: { sortOrder: "asc" },
-        include: { artist: { select: { id: true, name: true } } },
+        include: {
+          artist: { select: { id: true, name: true } },
+          category: { select: { id: true, name: true } },
+        },
       })
     ),
     withPrisma((prisma) => prisma.commission.findMany({ orderBy: { sortOrder: "asc" } })),
+    withPrisma((prisma) => prisma.category.findMany({ orderBy: { sortOrder: "asc" } })),
   ]);
 
   // Decimal n'est pas sérialisable par le RSC boundary — on convertit avant
@@ -38,12 +43,13 @@ export default async function SettingsPage({ params }: { params: Promise<{ local
   const articlesForSettings = articles.map((article) => ({
     id: article.id,
     title: article.title,
-    type: article.type,
     price: Number(article.price),
     taxable: article.taxable,
     active: article.active,
     artistId: article.artistId,
     artistName: article.artist?.name ?? null,
+    categoryId: article.categoryId,
+    categoryName: article.category?.name ?? null,
     imageUrl: article.imageUrl,
   }));
 
@@ -54,13 +60,21 @@ export default async function SettingsPage({ params }: { params: Promise<{ local
     active: commission.active,
   }));
 
+  const categoriesForSettings = categories.map((category) => ({
+    id: category.id,
+    name: category.name,
+    active: category.active,
+  }));
+
   return (
     <main className="mx-auto flex max-w-3xl flex-col items-center gap-6 p-4">
       <ArtistsManager language={language} artists={artistsForSettings} />
+      <CategoriesManager language={language} categories={categoriesForSettings} />
       <ArticlesManager
         language={language}
         articles={articlesForSettings}
         artists={artistsForSettings.filter((artist) => artist.active)}
+        categories={categoriesForSettings.filter((category) => category.active)}
       />
       <CommissionsManager language={language} commissions={commissionsForSettings} />
     </main>

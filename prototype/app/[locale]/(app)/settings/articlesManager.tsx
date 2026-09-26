@@ -10,15 +10,18 @@ import { getTranslation, articlesTranslations, type Language } from "@/translati
 import { articleImageSrc } from "@/lib/articleImage";
 import { ArticleForm, type ArticleEntry } from "./editArticle";
 import type { ArtistEntry } from "./editArtist";
+import type { CategoryEntry } from "./editCategory";
 
 export function ArticlesManager({
   language,
   articles,
   artists,
+  categories,
 }: {
   language: Language;
   articles: ArticleEntry[];
   artists: ArtistEntry[];
+  categories: CategoryEntry[];
 }) {
   const router = useRouter();
   const [formMode, setFormMode] = useState<"create" | ArticleEntry | null>(null);
@@ -50,6 +53,7 @@ export function ArticlesManager({
           language={language}
           initialValues={formMode === "create" ? undefined : formMode}
           artists={artists}
+          categories={categories}
           onCancel={() => setFormMode(null)}
           onSaved={handleSaved}
           onDeleted={handleSaved}
@@ -84,6 +88,7 @@ export function ArticlesManager({
                     <span className="text-xs font-normal text-muted-foreground">
                       {article.price.toFixed(2)} $
                       {article.artistName ? ` — ${article.artistName}` : ""}
+                      {article.categoryName ? ` · ${article.categoryName}` : ""}
                     </span>
                   </CardTitle>
                 </div>

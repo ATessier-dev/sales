@@ -3,6 +3,7 @@ import type { Translation } from "./types";
 export const posTranslations: Record<string, Translation> = {
   title: { en: "Register", fr: "Caisse" },
   searchPlaceholder: { en: "Search an item...", fr: "Rechercher un article..." },
+  allCategories: { en: "All", fr: "Toutes" },
   cart: { en: "Cart", fr: "Panier" },
   emptyCart: { en: "No item selected yet", fr: "Aucun article sélectionné" },
   subtotal: { en: "Subtotal", fr: "Sous-total" },

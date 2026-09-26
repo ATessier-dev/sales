@@ -24,12 +24,6 @@ enum PaymentMethod {
   CARD
 }
 
-enum ArticleType {
-  ORIGINAL
-  PRINT
-  OTHER
-}
-
 /// Users et employees sont la même entité, comme dans clockin — tout compte
 /// pouvant se connecter est un Employee, distingué seulement par `role`.
 model Employee {
@@ -87,29 +81,50 @@ model Commission {
   @@map("commissions")
 }
 
+/// Catalogue superviseur des catégories d'articles (original, print,
+/// stickers, t-shirt...), modifiable par le superuser contrairement à
+/// l'ancien enum ArticleType qu'il remplace. Sert à filtrer/rechercher plus
+/// rapidement dans le catalogue et à la caisse.
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  active    Boolean  @default(true)
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  articles Article[]
+
+  @@map("categories")
+}
+
 /// Catalogue superviseur des articles en vente (œuvre originale, print...).
 /// Prix en Decimal (jamais Float) pour éviter les erreurs d'arrondi sur de
 /// l'argent.
 model Article {
-  id        String      @id @default(cuid())
+  id        String   @id @default(cuid())
   title     String
-  type      ArticleType @default(ORIGINAL)
-  price     Decimal     @db.Decimal(10, 2)
+  price     Decimal  @db.Decimal(10, 2)
   /// URL Vercel Blob de la photo de l'article (même mécanisme que artur pour
   /// les médias uploadés). Nullable : un article peut ne pas avoir de photo.
-  imageUrl  String?     @map("image_url")
+  imageUrl  String?  @map("image_url")
   /// Faux pour un article exempté de taxes (rare, mais prévu par les notes
   /// métier). Vrai par défaut : la majorité des articles sont taxables.
-  taxable   Boolean     @default(true)
-  active    Boolean     @default(true)
-  sortOrder Int         @default(0) @map("sort_order")
-  createdAt DateTime    @default(now()) @map("created_at")
-  updatedAt DateTime    @updatedAt @map("updated_at")
+  taxable   Boolean  @default(true)
+  active    Boolean  @default(true)
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   /// Optionnel : un article peut ne pas (encore) avoir d'artiste assigné,
   /// et supprimer un artiste ne doit pas empêcher de garder son catalogue.
   artistId String?  @map("artist_id")
   artist   Artist?  @relation(fields: [artistId], references: [id], onDelete: SetNull)
+
+  /// Optionnel pour la même raison que artistId : supprimer une catégorie ne
+  /// doit pas empêcher de garder l'article au catalogue.
+  categoryId String?   @map("category_id")
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   saleItems SaleItem[]
 

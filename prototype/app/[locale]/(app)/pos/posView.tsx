@@ -9,21 +9,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeading } from "@/components/ui/pageHeading";
 import { GST_RATE, QST_RATE, roundToCents } from "@/lib/tax";
-import { getTranslation, posTranslations, articlesTranslations, type Language } from "@/translations";
+import { getTranslation, posTranslations, type Language } from "@/translations";
 import { articleImageSrc } from "@/lib/articleImage";
 
 export type ArticleForPos = {
   id: string;
   title: string;
-  type: "ORIGINAL" | "PRINT" | "OTHER";
   price: number;
   taxable: boolean;
   artistId: string | null;
   artistName: string | null;
+  categoryId: string | null;
+  categoryName: string | null;
   imageUrl: string | null;
 };
 
 export type CommissionOption = { id: string; title: string };
+export type CategoryOption = { id: string; name: string };
 
 type CartLine = { article: ArticleForPos; quantity: number; commissionId: string | null };
 type PaymentMethod = "CASH" | "CARD";
@@ -45,18 +47,19 @@ async function createSale(payload: {
   return response.json();
 }
 
-const typeLabelKey = { ORIGINAL: "typeOriginal", PRINT: "typePrint", OTHER: "typeOther" } as const;
-
 export function PosView({
   language,
   articles,
   commissions,
+  categories,
 }: {
   language: Language;
   articles: ArticleForPos[];
   commissions: CommissionOption[];
+  categories: CategoryOption[];
 }) {
   const [search, setSearch] = useState("");
+  const [categoryId, setCategoryId] = useState<string | null>(null);
   const [cart, setCart] = useState<Record<string, CartLine>>({});
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH");
   const [requiresDelivery, setRequiresDelivery] = useState(false);
@@ -66,13 +69,15 @@ export function PosView({
 
   const filteredArticles = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) return articles;
-    return articles.filter(
-      (article) =>
+    return articles.filter((article) => {
+      if (categoryId && article.categoryId !== categoryId) return false;
+      if (!query) return true;
+      return (
         article.title.toLowerCase().includes(query) ||
         article.artistName?.toLowerCase().includes(query)
-    );
-  }, [articles, search]);
+      );
+    });
+  }, [articles, search, categoryId]);
 
   const cartLines = Object.values(cart);
 
@@ -176,6 +181,29 @@ export function PosView({
           value={search}
           onChange={(event) => setSearch(event.target.value)}
         />
+        {categories.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant={categoryId === null ? "default" : "outline"}
+              onClick={() => setCategoryId(null)}
+            >
+              {getTranslation(posTranslations.allCategories, language)}
+            </Button>
+            {categories.map((category) => (
+              <Button
+                key={category.id}
+                type="button"
+                size="sm"
+                variant={categoryId === category.id ? "default" : "outline"}
+                onClick={() => setCategoryId(category.id)}
+              >
+                {category.name}
+              </Button>
+            ))}
+          </div>
+        )}
         {filteredArticles.length === 0 ? (
           <p className="text-sm text-muted-foreground">{getTranslation(posTranslations.noArticles, language)}</p>
         ) : (
@@ -205,9 +233,7 @@ export function PosView({
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">
-                      {getTranslation(articlesTranslations[typeLabelKey[article.type]], language)}
-                    </span>
+                    <span className="text-xs text-muted-foreground">{article.categoryName ?? ""}</span>
                     <Button size="sm" onClick={() => addToCart(article)}>
                       <Plus className="h-3.5 w-3.5" aria-hidden="true" />
                       {getTranslation(posTranslations.addToCart, language)}
