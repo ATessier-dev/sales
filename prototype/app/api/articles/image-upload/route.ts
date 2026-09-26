@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
-import { requireSuperuser, UnauthorizedError, ForbiddenError } from "@/lib/auth/requireSession";
+import { requireSuperuserCode, UnauthorizedError, ForbiddenError } from "@/lib/auth/superuserCode";
 
 // Mints un token d'upload direct navigateur -> Vercel Blob (voir artur,
 // lib/media/actions.ts) : contourne la limite ~4.5MB des routes serverless,
 // cette route ne fait que vérifier l'autorisation et renvoyer le token.
 export async function POST(request: Request) {
   try {
-    await requireSuperuser();
+    await requireSuperuserCode(request);
 
     const body = (await request.json()) as HandleUploadBody;
 

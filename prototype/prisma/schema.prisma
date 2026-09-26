@@ -12,11 +12,6 @@ datasource db {
   // lib/withPrisma.ts).
 }
 
-enum EmployeeRole {
-  EMPLOYEE
-  SUPERUSER
-}
-
 /// Le TPE encaisse la carte séparément de l'app (pas d'intégration Clover en
 /// v1) — CARD ne fait qu'enregistrer que l'employé a confirmé l'encaissement.
 enum PaymentMethod {
@@ -24,21 +19,21 @@ enum PaymentMethod {
   CARD
 }
 
-/// Users et employees sont la même entité, comme dans clockin — tout compte
-/// pouvant se connecter est un Employee, distingué seulement par `role`.
+/// N'est plus un compte de connexion (voir lib/auth/superuserCode.ts pour le
+/// seul secret restant, un code superuser unique partagé) : Employee sert
+/// uniquement à attribuer une vente à la personne qui l'a faite, choisie
+/// dans une liste à la caisse sans code. Catalogue superviseur comme
+/// Artist/Commission/Category.
 model Employee {
-  id        String       @id @default(cuid())
-  code      String       @unique
-  codeHash  String       @map("code_hash")
-  firstName String       @map("first_name")
-  lastName  String       @map("last_name")
-  role      EmployeeRole @default(EMPLOYEE)
-  locale    String       @default("fr")
+  id        String   @id @default(cuid())
+  firstName String   @map("first_name")
+  lastName  String   @map("last_name")
   /// Soft-disable plutôt que suppression, pour que les Sale historiques
   /// gardent une référence employé valide.
-  active    Boolean      @default(true)
-  createdAt DateTime     @default(now()) @map("created_at")
-  updatedAt DateTime     @updatedAt @map("updated_at")
+  active    Boolean  @default(true)
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   sales Sale[]
 

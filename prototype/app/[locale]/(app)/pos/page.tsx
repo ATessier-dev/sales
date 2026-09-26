@@ -6,7 +6,7 @@ export default async function PosPage({ params }: { params: Promise<{ locale: st
   const { locale } = await params;
   const language = (locale === "en" ? "en" : "fr") as Language;
 
-  const [articles, commissions, categories] = await Promise.all([
+  const [articles, commissions, categories, employees] = await Promise.all([
     withPrisma((prisma) =>
       prisma.article.findMany({
         where: { active: true },
@@ -29,6 +29,13 @@ export default async function PosPage({ params }: { params: Promise<{ locale: st
     withPrisma((prisma) =>
       prisma.category.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } })
     ),
+    withPrisma((prisma) =>
+      prisma.employee.findMany({
+        where: { active: true },
+        orderBy: { sortOrder: "asc" },
+        select: { id: true, firstName: true, lastName: true },
+      })
+    ),
   ]);
 
   // Decimal n'est pas sérialisable par le RSC boundary — on convertit avant
@@ -47,7 +54,13 @@ export default async function PosPage({ params }: { params: Promise<{ locale: st
 
   return (
     <main className="mx-auto max-w-5xl p-4">
-      <PosView language={language} articles={articlesForPos} commissions={commissions} categories={categories} />
+      <PosView
+        language={language}
+        articles={articlesForPos}
+        commissions={commissions}
+        categories={categories}
+        employees={employees}
+      />
     </main>
   );
 }

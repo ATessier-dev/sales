@@ -5,16 +5,17 @@ import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getTranslation, artistsTranslations, type Language } from "@/translations";
+import { getTranslation, employeesTranslations, type Language } from "@/translations";
 import { useSuperuserFetch } from "@/lib/superuserCodeContext";
 
-export type ArtistEntry = {
+export type EmployeeEntry = {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   active: boolean;
 };
 
-export function ArtistForm({
+export function EmployeeForm({
   language,
   initialValues,
   onCancel,
@@ -22,12 +23,13 @@ export function ArtistForm({
   onDeleted,
 }: {
   language: Language;
-  initialValues?: ArtistEntry;
+  initialValues?: EmployeeEntry;
   onCancel: () => void;
-  onSaved: (artist: ArtistEntry) => void;
+  onSaved: (employee: EmployeeEntry) => void;
   onDeleted: () => void;
 }) {
-  const [name, setName] = useState(initialValues?.name ?? "");
+  const [firstName, setFirstName] = useState(initialValues?.firstName ?? "");
+  const [lastName, setLastName] = useState(initialValues?.lastName ?? "");
   const [active, setActive] = useState(initialValues?.active ?? true);
   const [error, setError] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -40,10 +42,10 @@ export function ArtistForm({
     setSubmitting(true);
     setError(false);
 
-    const response = await superuserFetch(isEditing ? `/api/artists/${initialValues!.id}` : "/api/artists", {
+    const response = await superuserFetch(isEditing ? `/api/employees/${initialValues!.id}` : "/api/employees", {
       method: isEditing ? "PATCH" : "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, active }),
+      body: JSON.stringify({ firstName, lastName, active }),
     });
 
     setSubmitting(false);
@@ -53,8 +55,8 @@ export function ArtistForm({
       return;
     }
 
-    const data = (await response.json()) as { artist: ArtistEntry };
-    onSaved(data.artist);
+    const data = (await response.json()) as { employee: EmployeeEntry };
+    onSaved(data.employee);
   }
 
   async function handleDelete() {
@@ -62,7 +64,7 @@ export function ArtistForm({
     setSubmitting(true);
     setError(false);
 
-    const response = await superuserFetch(`/api/artists/${initialValues.id}`, { method: "DELETE" });
+    const response = await superuserFetch(`/api/employees/${initialValues.id}`, { method: "DELETE" });
 
     setSubmitting(false);
 
@@ -76,9 +78,26 @@ export function ArtistForm({
 
   return (
     <form onSubmit={handleSubmit} className="w-full space-y-3 rounded-lg border border-border bg-card p-4">
-      <div className="space-y-1">
-        <Label htmlFor="artist-name">{getTranslation(artistsTranslations.nameLabel, language)}</Label>
-        <Input id="artist-name" value={name} onChange={(event) => setName(event.target.value)} required autoFocus />
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <Label htmlFor="employee-first-name">{getTranslation(employeesTranslations.firstNameLabel, language)}</Label>
+          <Input
+            id="employee-first-name"
+            value={firstName}
+            onChange={(event) => setFirstName(event.target.value)}
+            required
+            autoFocus
+          />
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="employee-last-name">{getTranslation(employeesTranslations.lastNameLabel, language)}</Label>
+          <Input
+            id="employee-last-name"
+            value={lastName}
+            onChange={(event) => setLastName(event.target.value)}
+            required
+          />
+        </div>
       </div>
 
       {isEditing && (
@@ -89,24 +108,24 @@ export function ArtistForm({
             onChange={(event) => setActive(event.target.checked)}
             className="h-4 w-4 rounded border-input"
           />
-          {getTranslation(artistsTranslations.activeLabel, language)}
+          {getTranslation(employeesTranslations.activeLabel, language)}
         </label>
       )}
 
-      {error && <p className="text-xs text-destructive">{getTranslation(artistsTranslations.saveError, language)}</p>}
+      {error && <p className="text-xs text-destructive">{getTranslation(employeesTranslations.saveError, language)}</p>}
 
       <div className="flex flex-wrap justify-end gap-2">
         {isEditing && (
           <Button type="button" variant="destructive" size="sm" onClick={handleDelete} disabled={submitting}>
             <Trash2 className="h-4 w-4" aria-hidden="true" />
-            {getTranslation(artistsTranslations.deleteArtist, language)}
+            {getTranslation(employeesTranslations.deleteEmployee, language)}
           </Button>
         )}
         <Button type="button" variant="ghost" size="sm" onClick={onCancel} disabled={submitting}>
-          {getTranslation(artistsTranslations.cancel, language)}
+          {getTranslation(employeesTranslations.cancel, language)}
         </Button>
         <Button type="submit" size="sm" disabled={submitting}>
-          {getTranslation(artistsTranslations.save, language)}
+          {getTranslation(employeesTranslations.save, language)}
         </Button>
       </div>
     </form>

@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { withPrisma } from "@/lib/withPrisma";
-import { requireSuperuser, UnauthorizedError, ForbiddenError } from "@/lib/auth/requireSession";
+import { requireSuperuserCode, UnauthorizedError, ForbiddenError } from "@/lib/auth/superuserCode";
 
 export async function PATCH(request: Request, { params }: RouteContext<"/api/artists/[id]">) {
   try {
-    await requireSuperuser();
+    await requireSuperuserCode(request);
     const { id } = await params;
 
     const existing = await withPrisma((prisma) => prisma.artist.findUnique({ where: { id } }));
@@ -42,7 +42,7 @@ export async function PATCH(request: Request, { params }: RouteContext<"/api/art
 // onDelete: SetNull, les articles restent au catalogue sans artiste assigné.
 export async function DELETE(request: Request, { params }: RouteContext<"/api/artists/[id]">) {
   try {
-    await requireSuperuser();
+    await requireSuperuserCode(request);
     const { id } = await params;
 
     const existing = await withPrisma((prisma) => prisma.artist.findUnique({ where: { id } }));

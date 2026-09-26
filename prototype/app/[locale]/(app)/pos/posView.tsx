@@ -26,6 +26,7 @@ export type ArticleForPos = {
 
 export type CommissionOption = { id: string; title: string };
 export type CategoryOption = { id: string; name: string };
+export type EmployeeOption = { id: string; firstName: string; lastName: string };
 
 type CartLine = { article: ArticleForPos; quantity: number; commissionId: string | null };
 type PaymentMethod = "CASH" | "CARD";
@@ -33,6 +34,7 @@ type PaymentMethod = "CASH" | "CARD";
 type SaleResponse = { sale: { id: string; total: string } };
 
 async function createSale(payload: {
+  employeeId: string;
   items: { articleId: string; quantity: number; commissionId: string | null }[];
   paymentMethod: PaymentMethod;
   requiresDelivery: boolean;
@@ -52,15 +54,18 @@ export function PosView({
   articles,
   commissions,
   categories,
+  employees,
 }: {
   language: Language;
   articles: ArticleForPos[];
   commissions: CommissionOption[];
   categories: CategoryOption[];
+  employees: EmployeeOption[];
 }) {
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [cart, setCart] = useState<Record<string, CartLine>>({});
+  const [employeeId, setEmployeeId] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH");
   const [requiresDelivery, setRequiresDelivery] = useState(false);
   const [deliveryNote, setDeliveryNote] = useState("");
@@ -144,10 +149,12 @@ export function PosView({
   const total = roundToCents(subtotal + gstAmount + qstAmount);
 
   const missingCommission = cartLines.some((line) => line.article.artistId && !line.commissionId);
+  const missingEmployee = !employeeId;
 
   function handleSubmit() {
-    if (missingCommission) return;
+    if (missingCommission || missingEmployee) return;
     mutation.mutate({
+      employeeId,
       items: cartLines.map((line) => ({
         articleId: line.article.id,
         quantity: line.quantity,
@@ -254,6 +261,23 @@ export function PosView({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="space-y-1">
+            <Label htmlFor="pos-employee">{getTranslation(posTranslations.employeeLabel, language)}</Label>
+            <select
+              id="pos-employee"
+              value={employeeId}
+              onChange={(event) => setEmployeeId(event.target.value)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <option value="">{getTranslation(posTranslations.chooseEmployee, language)}</option>
+              {employees.map((employee) => (
+                <option key={employee.id} value={employee.id}>
+                  {employee.firstName} {employee.lastName}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {cartLines.length === 0 ? (
             <p className="text-sm text-muted-foreground">{getTranslation(posTranslations.emptyCart, language)}</p>
           ) : (
@@ -377,13 +401,17 @@ export function PosView({
             <p className="text-sm text-destructive">{getTranslation(posTranslations.commissionRequiredError, language)}</p>
           )}
 
+          {missingEmployee && cartLines.length > 0 && (
+            <p className="text-sm text-destructive">{getTranslation(posTranslations.employeeRequiredError, language)}</p>
+          )}
+
           {mutation.isError && (
             <p className="text-sm text-destructive">{getTranslation(posTranslations.submitError, language)}</p>
           )}
 
           <Button
             className="w-full"
-            disabled={cartLines.length === 0 || missingCommission || mutation.isPending}
+            disabled={cartLines.length === 0 || missingCommission || missingEmployee || mutation.isPending}
             onClick={handleSubmit}
           >
             {getTranslation(posTranslations.submit, language)}

@@ -3,7 +3,6 @@ import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
-import { hashCode } from "../lib/auth-utils";
 
 // Unlike `next dev`, running this script via `tsx` loads no .env file on its
 // own — and a naive `source .env.local` in bash mis-parses a Neon URL's
@@ -19,34 +18,22 @@ const adapter = new PrismaNeon({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  // Login looks the employee up by `code` directly (findUnique), so the hash
-  // must be of that same value — not a separate secret. See the plan's auth
-  // design: POST /api/auth/login { code } → findUnique({ code }) →
-  // argon2.verify(code, codeHash).
-  const employeeCodeHash = await hashCode("EMP001");
+  // Employee ne sert plus qu'à attribuer une vente (voir lib/auth/superuserCode.ts
+  // pour le code superuser, désormais un secret unique séparé de tout compte).
+  // Upsert par id (et non par une clé "seed-employee-*" recréée) : ces deux
+  // employés existaient déjà avant la suppression du login (comptes EMP001/
+  // SUP001) et sont référencés par des ventes de test réelles en base ; les
+  // recréer sous un nouvel id aurait dupliqué la liste sans rien apporter.
   await prisma.employee.upsert({
-    where: { code: "EMP001" },
-    update: { codeHash: employeeCodeHash },
-    create: {
-      code: "EMP001",
-      codeHash: employeeCodeHash,
-      firstName: "Alex",
-      lastName: "Tremblay",
-      role: "EMPLOYEE",
-    },
+    where: { id: "cmufw0utu0000rgwdd1qk6yiz" },
+    update: {},
+    create: { id: "cmufw0utu0000rgwdd1qk6yiz", firstName: "Alex", lastName: "Tremblay", sortOrder: 0 },
   });
 
-  const superuserCodeHash = await hashCode("SUP001");
   await prisma.employee.upsert({
-    where: { code: "SUP001" },
-    update: { codeHash: superuserCodeHash },
-    create: {
-      code: "SUP001",
-      codeHash: superuserCodeHash,
-      firstName: "Sam",
-      lastName: "Bouchard",
-      role: "SUPERUSER",
-    },
+    where: { id: "cmufw0v0v0001rgwdb7hg9e38" },
+    update: {},
+    create: { id: "cmufw0v0v0001rgwdb7hg9e38", firstName: "Sam", lastName: "Bouchard", sortOrder: 1 },
   });
 
   const roy = await prisma.artist.upsert({
@@ -162,7 +149,7 @@ async function main() {
   });
 
   console.log(
-    "Seeded 2 comptes de test (EMP001 / SUP001) + 3 artistes + 3 commissions + 4 catégories + 4 articles."
+    "Seeded 2 employés + 3 artistes + 3 commissions + 4 catégories + 4 articles."
   );
 }
 

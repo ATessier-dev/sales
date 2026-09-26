@@ -1,35 +1,25 @@
 import { NextResponse } from "next/server";
 import { withPrisma } from "@/lib/withPrisma";
-import { requireEmployee, requireSuperuser, UnauthorizedError, ForbiddenError } from "@/lib/auth/requireSession";
+import { requireSuperuserCode, UnauthorizedError, ForbiddenError } from "@/lib/auth/superuserCode";
 
-// La caisse (/pos) ne doit voir que les provenances actives ; /settings a
-// besoin de tout le catalogue pour pouvoir réactiver une provenance
-// désactivée.
+// /pos lit les commissions directement via Prisma (page.tsx, id/title
+// seulement, jamais le taux) : cette route ne sert plus qu'à /settings, donc
+// toujours derrière le code superuser, taux inclus.
 export async function GET(request: Request) {
   try {
-    const session = await requireEmployee();
-
-    const url = new URL(request.url);
-    const activeOnly = url.searchParams.get("all") !== "1";
+    await requireSuperuserCode(request);
 
     const commissions = await withPrisma((prisma) =>
-      prisma.commission.findMany({
-        where: activeOnly ? { active: true } : undefined,
-        orderBy: { sortOrder: "asc" },
-      })
+      prisma.commission.findMany({ orderBy: { sortOrder: "asc" } })
     );
 
-    // Le taux n'est jamais exposé côté caisse, seul le titre l'est : un
-    // employé ne doit pas pouvoir le lire, même en inspectant cette réponse.
-    const payload =
-      session.role === "SUPERUSER"
-        ? commissions
-        : commissions.map(({ rate: _rate, ...rest }) => rest);
-
-    return NextResponse.json({ commissions: payload });
+    return NextResponse.json({ commissions });
   } catch (error) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
+    if (error instanceof ForbiddenError) {
+      return NextResponse.json({ error: "forbidden" }, { status: 403 });
     }
     throw error;
   }
@@ -37,7 +27,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    await requireSuperuser();
+    await requireSuperuserCode(request);
 
     const body = (await request.json().catch(() => null)) as
       | { title?: unknown; rate?: unknown }
