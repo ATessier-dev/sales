@@ -1,19 +1,16 @@
 import { NextResponse } from "next/server";
 import { withPrisma } from "@/lib/withPrisma";
-import { requireEmployee, requireSuperuser, UnauthorizedError, ForbiddenError } from "@/lib/auth/requireSession";
+import { requireSuperuserCode, UnauthorizedError, ForbiddenError } from "@/lib/auth/superuserCode";
 
-// La caisse (/pos) ne doit voir que les articles actifs ; /settings a besoin
-// de tout le catalogue pour pouvoir réactiver un article désactivé.
+// /pos lit le catalogue directement via Prisma (page.tsx) : cette route ne
+// sert plus qu'à /settings, donc toujours derrière le code superuser, pour
+// le catalogue complet (actifs + inactifs).
 export async function GET(request: Request) {
   try {
-    await requireEmployee();
-
-    const url = new URL(request.url);
-    const activeOnly = url.searchParams.get("all") !== "1";
+    await requireSuperuserCode(request);
 
     const articles = await withPrisma((prisma) =>
       prisma.article.findMany({
-        where: activeOnly ? { active: true } : undefined,
         orderBy: { sortOrder: "asc" },
         include: {
           artist: { select: { id: true, name: true } },
@@ -27,13 +24,16 @@ export async function GET(request: Request) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
+    if (error instanceof ForbiddenError) {
+      return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    }
     throw error;
   }
 }
 
 export async function POST(request: Request) {
   try {
-    await requireSuperuser();
+    await requireSuperuserCode(request);
 
     const body = (await request.json().catch(() => null)) as
       | {

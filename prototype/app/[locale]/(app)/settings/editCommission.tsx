@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getTranslation, commissionsTranslations, type Language } from "@/translations";
+import { useSuperuserFetch } from "@/lib/superuserCodeContext";
 
 export type CommissionEntry = {
   id: string;
@@ -32,6 +33,7 @@ export function CommissionForm({
   const [active, setActive] = useState(initialValues?.active ?? true);
   const [error, setError] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const superuserFetch = useSuperuserFetch();
 
   const isEditing = Boolean(initialValues);
 
@@ -40,7 +42,7 @@ export function CommissionForm({
     setSubmitting(true);
     setError(false);
 
-    const response = await fetch(isEditing ? `/api/commissions/${initialValues!.id}` : "/api/commissions", {
+    const response = await superuserFetch(isEditing ? `/api/commissions/${initialValues!.id}` : "/api/commissions", {
       method: isEditing ? "PATCH" : "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title, rate: Number(rate), active }),
@@ -62,7 +64,7 @@ export function CommissionForm({
     setSubmitting(true);
     setError(false);
 
-    const response = await fetch(`/api/commissions/${initialValues.id}`, { method: "DELETE" });
+    const response = await superuserFetch(`/api/commissions/${initialValues.id}`, { method: "DELETE" });
 
     setSubmitting(false);
 

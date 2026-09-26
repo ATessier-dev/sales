@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { withPrisma } from "@/lib/withPrisma";
-import { requireEmployee, requireSuperuser, UnauthorizedError, ForbiddenError } from "@/lib/auth/requireSession";
+import { requireSuperuserCode, UnauthorizedError, ForbiddenError } from "@/lib/auth/superuserCode";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    await requireEmployee();
+    await requireSuperuserCode(request);
 
     const artists = await withPrisma((prisma) =>
       prisma.artist.findMany({ orderBy: { sortOrder: "asc" } })
@@ -15,13 +15,16 @@ export async function GET() {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
+    if (error instanceof ForbiddenError) {
+      return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    }
     throw error;
   }
 }
 
 export async function POST(request: Request) {
   try {
-    await requireSuperuser();
+    await requireSuperuserCode(request);
 
     const body = (await request.json().catch(() => null)) as { name?: unknown } | null;
     const name = typeof body?.name === "string" ? body.name.trim() : "";

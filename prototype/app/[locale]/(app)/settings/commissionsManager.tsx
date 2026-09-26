@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Plus, Pencil, MapPin } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,16 +11,17 @@ import { CommissionForm, type CommissionEntry } from "./editCommission";
 export function CommissionsManager({
   language,
   commissions,
+  onChanged,
 }: {
   language: Language;
   commissions: CommissionEntry[];
+  onChanged: () => void;
 }) {
-  const router = useRouter();
   const [formMode, setFormMode] = useState<"create" | CommissionEntry | null>(null);
 
   function handleSaved() {
     setFormMode(null);
-    router.refresh();
+    onChanged();
   }
 
   return (

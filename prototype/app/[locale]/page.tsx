@@ -6,5 +6,5 @@ export default async function LocaleIndexPage({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  redirect({ href: "/login", locale });
+  redirect({ href: "/pos", locale });
 }

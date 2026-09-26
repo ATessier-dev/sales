@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { withPrisma } from "@/lib/withPrisma";
-import { requireSuperuser, UnauthorizedError, ForbiddenError } from "@/lib/auth/requireSession";
+import { requireSuperuserCode, UnauthorizedError, ForbiddenError } from "@/lib/auth/superuserCode";
 
 export async function PATCH(request: Request, { params }: RouteContext<"/api/categories/[id]">) {
   try {
-    await requireSuperuser();
+    await requireSuperuserCode(request);
     const { id } = await params;
 
     const existing = await withPrisma((prisma) => prisma.category.findUnique({ where: { id } }));
@@ -43,7 +43,7 @@ export async function PATCH(request: Request, { params }: RouteContext<"/api/cat
 // assignée.
 export async function DELETE(request: Request, { params }: RouteContext<"/api/categories/[id]">) {
   try {
-    await requireSuperuser();
+    await requireSuperuserCode(request);
     const { id } = await params;
 
     const existing = await withPrisma((prisma) => prisma.category.findUnique({ where: { id } }));

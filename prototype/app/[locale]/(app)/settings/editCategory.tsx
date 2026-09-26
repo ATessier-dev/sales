@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getTranslation, categoriesTranslations, type Language } from "@/translations";
+import { useSuperuserFetch } from "@/lib/superuserCodeContext";
 
 export type CategoryEntry = {
   id: string;
@@ -30,6 +31,7 @@ export function CategoryForm({
   const [active, setActive] = useState(initialValues?.active ?? true);
   const [error, setError] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const superuserFetch = useSuperuserFetch();
 
   const isEditing = Boolean(initialValues);
 
@@ -38,7 +40,7 @@ export function CategoryForm({
     setSubmitting(true);
     setError(false);
 
-    const response = await fetch(isEditing ? `/api/categories/${initialValues!.id}` : "/api/categories", {
+    const response = await superuserFetch(isEditing ? `/api/categories/${initialValues!.id}` : "/api/categories", {
       method: isEditing ? "PATCH" : "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, active }),
@@ -60,7 +62,7 @@ export function CategoryForm({
     setSubmitting(true);
     setError(false);
 
-    const response = await fetch(`/api/categories/${initialValues.id}`, { method: "DELETE" });
+    const response = await superuserFetch(`/api/categories/${initialValues.id}`, { method: "DELETE" });
 
     setSubmitting(false);
 

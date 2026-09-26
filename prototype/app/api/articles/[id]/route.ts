@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { withPrisma } from "@/lib/withPrisma";
-import { requireSuperuser, UnauthorizedError, ForbiddenError } from "@/lib/auth/requireSession";
+import { requireSuperuserCode, UnauthorizedError, ForbiddenError } from "@/lib/auth/superuserCode";
 
 export async function PATCH(request: Request, { params }: RouteContext<"/api/articles/[id]">) {
   try {
-    await requireSuperuser();
+    await requireSuperuserCode(request);
     const { id } = await params;
 
     const existing = await withPrisma((prisma) => prisma.article.findUnique({ where: { id } }));
@@ -96,7 +96,7 @@ export async function PATCH(request: Request, { params }: RouteContext<"/api/art
 // (articleTitle, unitPrice...) même après suppression de l'article.
 export async function DELETE(request: Request, { params }: RouteContext<"/api/articles/[id]">) {
   try {
-    await requireSuperuser();
+    await requireSuperuserCode(request);
     const { id } = await params;
 
     const existing = await withPrisma((prisma) => prisma.article.findUnique({ where: { id } }));

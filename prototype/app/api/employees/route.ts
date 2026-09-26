@@ -2,18 +2,18 @@ import { NextResponse } from "next/server";
 import { withPrisma } from "@/lib/withPrisma";
 import { requireSuperuserCode, UnauthorizedError, ForbiddenError } from "@/lib/auth/superuserCode";
 
-// /pos lit le catalogue directement via Prisma (page.tsx) : cette route ne
-// sert plus qu'à /settings, donc toujours derrière le code superuser, pour
-// le catalogue complet (actives + inactives).
+// /pos lit la liste des employés directement via Prisma (page.tsx, actifs
+// seulement, sélection sans code) : cette route ne sert plus qu'à /settings,
+// donc toujours derrière le code superuser, pour le catalogue complet.
 export async function GET(request: Request) {
   try {
     await requireSuperuserCode(request);
 
-    const categories = await withPrisma((prisma) =>
-      prisma.category.findMany({ orderBy: { sortOrder: "asc" } })
+    const employees = await withPrisma((prisma) =>
+      prisma.employee.findMany({ orderBy: { sortOrder: "asc" } })
     );
 
-    return NextResponse.json({ categories });
+    return NextResponse.json({ employees });
   } catch (error) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -29,24 +29,27 @@ export async function POST(request: Request) {
   try {
     await requireSuperuserCode(request);
 
-    const body = (await request.json().catch(() => null)) as { name?: unknown } | null;
-    const name = typeof body?.name === "string" ? body.name.trim() : "";
+    const body = (await request.json().catch(() => null)) as
+      | { firstName?: unknown; lastName?: unknown }
+      | null;
+    const firstName = typeof body?.firstName === "string" ? body.firstName.trim() : "";
+    const lastName = typeof body?.lastName === "string" ? body.lastName.trim() : "";
 
-    if (!name) {
+    if (!firstName || !lastName) {
       return NextResponse.json({ error: "invalid_body" }, { status: 400 });
     }
 
-    const lastCategory = await withPrisma((prisma) =>
-      prisma.category.findFirst({ orderBy: { sortOrder: "desc" } })
+    const lastEmployee = await withPrisma((prisma) =>
+      prisma.employee.findFirst({ orderBy: { sortOrder: "desc" } })
     );
 
-    const category = await withPrisma((prisma) =>
-      prisma.category.create({
-        data: { name, sortOrder: (lastCategory?.sortOrder ?? -1) + 1 },
+    const employee = await withPrisma((prisma) =>
+      prisma.employee.create({
+        data: { firstName, lastName, sortOrder: (lastEmployee?.sortOrder ?? -1) + 1 },
       })
     );
 
-    return NextResponse.json({ category }, { status: 201 });
+    return NextResponse.json({ employee }, { status: 201 });
   } catch (error) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });

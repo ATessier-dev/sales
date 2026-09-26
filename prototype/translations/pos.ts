@@ -32,4 +32,10 @@ export const posTranslations: Record<string, Translation> = {
     en: "Choose a commission for every item with an artist before completing the sale.",
     fr: "Choisissez une commission pour chaque article avec un artiste avant d'enregistrer la vente.",
   },
+  employeeLabel: { en: "Employee", fr: "Employé" },
+  chooseEmployee: { en: "Choose an employee...", fr: "Choisir un employé..." },
+  employeeRequiredError: {
+    en: "Choose the employee making the sale before completing it.",
+    fr: "Choisissez l'employé qui fait la vente avant de l'enregistrer.",
+  },
 };
