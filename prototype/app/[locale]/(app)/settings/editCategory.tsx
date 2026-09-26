@@ -5,15 +5,15 @@ import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getTranslation, artistsTranslations, type Language } from "@/translations";
+import { getTranslation, categoriesTranslations, type Language } from "@/translations";
 
-export type ArtistEntry = {
+export type CategoryEntry = {
   id: string;
   name: string;
   active: boolean;
 };
 
-export function ArtistForm({
+export function CategoryForm({
   language,
   initialValues,
   onCancel,
@@ -21,9 +21,9 @@ export function ArtistForm({
   onDeleted,
 }: {
   language: Language;
-  initialValues?: ArtistEntry;
+  initialValues?: CategoryEntry;
   onCancel: () => void;
-  onSaved: (artist: ArtistEntry) => void;
+  onSaved: (category: CategoryEntry) => void;
   onDeleted: () => void;
 }) {
   const [name, setName] = useState(initialValues?.name ?? "");
@@ -38,7 +38,7 @@ export function ArtistForm({
     setSubmitting(true);
     setError(false);
 
-    const response = await fetch(isEditing ? `/api/artists/${initialValues!.id}` : "/api/artists", {
+    const response = await fetch(isEditing ? `/api/categories/${initialValues!.id}` : "/api/categories", {
       method: isEditing ? "PATCH" : "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, active }),
@@ -51,8 +51,8 @@ export function ArtistForm({
       return;
     }
 
-    const data = (await response.json()) as { artist: ArtistEntry };
-    onSaved(data.artist);
+    const data = (await response.json()) as { category: CategoryEntry };
+    onSaved(data.category);
   }
 
   async function handleDelete() {
@@ -60,7 +60,7 @@ export function ArtistForm({
     setSubmitting(true);
     setError(false);
 
-    const response = await fetch(`/api/artists/${initialValues.id}`, { method: "DELETE" });
+    const response = await fetch(`/api/categories/${initialValues.id}`, { method: "DELETE" });
 
     setSubmitting(false);
 
@@ -75,8 +75,8 @@ export function ArtistForm({
   return (
     <form onSubmit={handleSubmit} className="w-full space-y-3 rounded-lg border border-border bg-card p-4">
       <div className="space-y-1">
-        <Label htmlFor="artist-name">{getTranslation(artistsTranslations.nameLabel, language)}</Label>
-        <Input id="artist-name" value={name} onChange={(event) => setName(event.target.value)} required autoFocus />
+        <Label htmlFor="category-name">{getTranslation(categoriesTranslations.nameLabel, language)}</Label>
+        <Input id="category-name" value={name} onChange={(event) => setName(event.target.value)} required autoFocus />
       </div>
 
       {isEditing && (
@@ -87,24 +87,24 @@ export function ArtistForm({
             onChange={(event) => setActive(event.target.checked)}
             className="h-4 w-4 rounded border-input"
           />
-          {getTranslation(artistsTranslations.activeLabel, language)}
+          {getTranslation(categoriesTranslations.activeLabel, language)}
         </label>
       )}
 
-      {error && <p className="text-xs text-destructive">{getTranslation(artistsTranslations.saveError, language)}</p>}
+      {error && <p className="text-xs text-destructive">{getTranslation(categoriesTranslations.saveError, language)}</p>}
 
       <div className="flex flex-wrap justify-end gap-2">
         {isEditing && (
           <Button type="button" variant="destructive" size="sm" onClick={handleDelete} disabled={submitting}>
             <Trash2 className="h-4 w-4" aria-hidden="true" />
-            {getTranslation(artistsTranslations.deleteArtist, language)}
+            {getTranslation(categoriesTranslations.deleteCategory, language)}
           </Button>
         )}
         <Button type="button" variant="ghost" size="sm" onClick={onCancel} disabled={submitting}>
-          {getTranslation(artistsTranslations.cancel, language)}
+          {getTranslation(categoriesTranslations.cancel, language)}
         </Button>
         <Button type="submit" size="sm" disabled={submitting}>
-          {getTranslation(artistsTranslations.save, language)}
+          {getTranslation(categoriesTranslations.save, language)}
         </Button>
       </div>
     </form>

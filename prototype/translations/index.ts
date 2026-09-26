@@ -2,8 +2,11 @@ export * from "./login";
 export * from "./navbar";
 export * from "./pos";
 export * from "./sales";
+export * from "./reports";
 export * from "./artists";
 export * from "./articles";
+export * from "./commissions";
+export * from "./categories";
 export * from "./settings";
 export type { Language, Translation } from "./types";
 

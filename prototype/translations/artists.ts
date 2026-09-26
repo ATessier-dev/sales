@@ -6,7 +6,6 @@ export const artistsTranslations: Record<string, Translation> = {
   editArtist: { en: "Edit", fr: "Modifier" },
   deleteArtist: { en: "Delete", fr: "Supprimer" },
   nameLabel: { en: "Name", fr: "Nom" },
-  commissionRateLabel: { en: "Commission rate (%)", fr: "Taux de commission (%)" },
   activeLabel: { en: "Active", fr: "Actif" },
   empty: { en: "No artist yet.", fr: "Aucun artiste pour le moment." },
   cancel: { en: "Cancel", fr: "Annuler" },

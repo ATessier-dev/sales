@@ -9,24 +9,31 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeading } from "@/components/ui/pageHeading";
 import { GST_RATE, QST_RATE, roundToCents } from "@/lib/tax";
-import { getTranslation, posTranslations, articlesTranslations, type Language } from "@/translations";
+import { getTranslation, posTranslations, type Language } from "@/translations";
+import { articleImageSrc } from "@/lib/articleImage";
 
 export type ArticleForPos = {
   id: string;
   title: string;
-  type: "ORIGINAL" | "PRINT" | "OTHER";
   price: number;
   taxable: boolean;
+  artistId: string | null;
   artistName: string | null;
+  categoryId: string | null;
+  categoryName: string | null;
+  imageUrl: string | null;
 };
 
-type CartLine = { article: ArticleForPos; quantity: number };
+export type CommissionOption = { id: string; title: string };
+export type CategoryOption = { id: string; name: string };
+
+type CartLine = { article: ArticleForPos; quantity: number; commissionId: string | null };
 type PaymentMethod = "CASH" | "CARD";
 
 type SaleResponse = { sale: { id: string; total: string } };
 
 async function createSale(payload: {
-  items: { articleId: string; quantity: number }[];
+  items: { articleId: string; quantity: number; commissionId: string | null }[];
   paymentMethod: PaymentMethod;
   requiresDelivery: boolean;
   deliveryNote: string | null;
@@ -40,10 +47,19 @@ async function createSale(payload: {
   return response.json();
 }
 
-const typeLabelKey = { ORIGINAL: "typeOriginal", PRINT: "typePrint", OTHER: "typeOther" } as const;
-
-export function PosView({ language, articles }: { language: Language; articles: ArticleForPos[] }) {
+export function PosView({
+  language,
+  articles,
+  commissions,
+  categories,
+}: {
+  language: Language;
+  articles: ArticleForPos[];
+  commissions: CommissionOption[];
+  categories: CategoryOption[];
+}) {
   const [search, setSearch] = useState("");
+  const [categoryId, setCategoryId] = useState<string | null>(null);
   const [cart, setCart] = useState<Record<string, CartLine>>({});
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH");
   const [requiresDelivery, setRequiresDelivery] = useState(false);
@@ -53,13 +69,15 @@ export function PosView({ language, articles }: { language: Language; articles: 
 
   const filteredArticles = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) return articles;
-    return articles.filter(
-      (article) =>
+    return articles.filter((article) => {
+      if (categoryId && article.categoryId !== categoryId) return false;
+      if (!query) return true;
+      return (
         article.title.toLowerCase().includes(query) ||
         article.artistName?.toLowerCase().includes(query)
-    );
-  }, [articles, search]);
+      );
+    });
+  }, [articles, search, categoryId]);
 
   const cartLines = Object.values(cart);
 
@@ -68,8 +86,20 @@ export function PosView({ language, articles }: { language: Language; articles: 
       const existing = current[article.id];
       return {
         ...current,
-        [article.id]: { article, quantity: (existing?.quantity ?? 0) + 1 },
+        [article.id]: {
+          article,
+          quantity: (existing?.quantity ?? 0) + 1,
+          commissionId: existing?.commissionId ?? null,
+        },
       };
+    });
+  }
+
+  function setLineCommission(articleId: string, commissionId: string) {
+    setCart((current) => {
+      const existing = current[articleId];
+      if (!existing) return current;
+      return { ...current, [articleId]: { ...existing, commissionId: commissionId || null } };
     });
   }
 
@@ -113,9 +143,16 @@ export function PosView({ language, articles }: { language: Language; articles: 
   const qstAmount = roundToCents(taxableSubtotal * QST_RATE);
   const total = roundToCents(subtotal + gstAmount + qstAmount);
 
+  const missingCommission = cartLines.some((line) => line.article.artistId && !line.commissionId);
+
   function handleSubmit() {
+    if (missingCommission) return;
     mutation.mutate({
-      items: cartLines.map((line) => ({ articleId: line.article.id, quantity: line.quantity })),
+      items: cartLines.map((line) => ({
+        articleId: line.article.id,
+        quantity: line.quantity,
+        commissionId: line.commissionId,
+      })),
       paymentMethod,
       requiresDelivery,
       deliveryNote: requiresDelivery ? deliveryNote.trim() || null : null,
@@ -144,6 +181,29 @@ export function PosView({ language, articles }: { language: Language; articles: 
           value={search}
           onChange={(event) => setSearch(event.target.value)}
         />
+        {categories.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant={categoryId === null ? "default" : "outline"}
+              onClick={() => setCategoryId(null)}
+            >
+              {getTranslation(posTranslations.allCategories, language)}
+            </Button>
+            {categories.map((category) => (
+              <Button
+                key={category.id}
+                type="button"
+                size="sm"
+                variant={categoryId === category.id ? "default" : "outline"}
+                onClick={() => setCategoryId(category.id)}
+              >
+                {category.name}
+              </Button>
+            ))}
+          </div>
+        )}
         {filteredArticles.length === 0 ? (
           <p className="text-sm text-muted-foreground">{getTranslation(posTranslations.noArticles, language)}</p>
         ) : (
@@ -152,20 +212,28 @@ export function PosView({ language, articles }: { language: Language; articles: 
               <Card key={article.id}>
                 <CardContent className="flex flex-col gap-2 p-4">
                   <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="font-medium leading-tight">{article.title}</p>
-                      {article.artistName && (
-                        <p className="text-xs text-muted-foreground">{article.artistName}</p>
+                    <div className="flex items-start gap-2">
+                      {article.imageUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={articleImageSrc(article.imageUrl)}
+                          alt=""
+                          className="h-12 w-12 shrink-0 rounded-md border border-border object-cover"
+                        />
                       )}
+                      <div>
+                        <p className="font-medium leading-tight">{article.title}</p>
+                        {article.artistName && (
+                          <p className="text-xs text-muted-foreground">{article.artistName}</p>
+                        )}
+                      </div>
                     </div>
                     <span className="whitespace-nowrap text-sm font-semibold">
                       {article.price.toFixed(2)} $
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">
-                      {getTranslation(articlesTranslations[typeLabelKey[article.type]], language)}
-                    </span>
+                    <span className="text-xs text-muted-foreground">{article.categoryName ?? ""}</span>
                     <Button size="sm" onClick={() => addToCart(article)}>
                       <Plus className="h-3.5 w-3.5" aria-hidden="true" />
                       {getTranslation(posTranslations.addToCart, language)}
@@ -189,32 +257,49 @@ export function PosView({ language, articles }: { language: Language; articles: 
           {cartLines.length === 0 ? (
             <p className="text-sm text-muted-foreground">{getTranslation(posTranslations.emptyCart, language)}</p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {cartLines.map((line) => (
-                <div key={line.article.id} className="flex items-center justify-between gap-2 text-sm">
-                  <div className="min-w-0">
-                    <p className="truncate font-medium">{line.article.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {line.article.price.toFixed(2)} $ x {line.quantity}
-                    </p>
+                <div key={line.article.id} className="space-y-1.5 text-sm">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{line.article.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {line.article.price.toFixed(2)} $ x {line.quantity}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => changeQuantity(line.article.id, -1)}>
+                        <Minus className="h-3 w-3" aria-hidden="true" />
+                      </Button>
+                      <span className="w-5 text-center">{line.quantity}</span>
+                      <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => changeQuantity(line.article.id, 1)}>
+                        <Plus className="h-3 w-3" aria-hidden="true" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive"
+                        onClick={() => removeFromCart(line.article.id)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => changeQuantity(line.article.id, -1)}>
-                      <Minus className="h-3 w-3" aria-hidden="true" />
-                    </Button>
-                    <span className="w-5 text-center">{line.quantity}</span>
-                    <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => changeQuantity(line.article.id, 1)}>
-                      <Plus className="h-3 w-3" aria-hidden="true" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-destructive"
-                      onClick={() => removeFromCart(line.article.id)}
+                  {line.article.artistId && (
+                    <select
+                      value={line.commissionId ?? ""}
+                      onChange={(event) => setLineCommission(line.article.id, event.target.value)}
+                      className="flex h-8 w-full rounded-md border border-input bg-background px-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      aria-label={getTranslation(posTranslations.commissionLabel, language)}
                     >
-                      <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                    </Button>
-                  </div>
+                      <option value="">{getTranslation(posTranslations.chooseCommission, language)}</option>
+                      {commissions.map((commission) => (
+                        <option key={commission.id} value={commission.id}>
+                          {commission.title}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
               ))}
             </div>
@@ -288,11 +373,19 @@ export function PosView({ language, articles }: { language: Language; articles: 
             )}
           </div>
 
+          {missingCommission && (
+            <p className="text-sm text-destructive">{getTranslation(posTranslations.commissionRequiredError, language)}</p>
+          )}
+
           {mutation.isError && (
             <p className="text-sm text-destructive">{getTranslation(posTranslations.submitError, language)}</p>
           )}
 
-          <Button className="w-full" disabled={cartLines.length === 0 || mutation.isPending} onClick={handleSubmit}>
+          <Button
+            className="w-full"
+            disabled={cartLines.length === 0 || missingCommission || mutation.isPending}
+            onClick={handleSubmit}
+          >
             {getTranslation(posTranslations.submit, language)}
           </Button>
         </CardContent>

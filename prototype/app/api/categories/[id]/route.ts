@@ -2,12 +2,12 @@ import { NextResponse } from "next/server";
 import { withPrisma } from "@/lib/withPrisma";
 import { requireSuperuser, UnauthorizedError, ForbiddenError } from "@/lib/auth/requireSession";
 
-export async function PATCH(request: Request, { params }: RouteContext<"/api/artists/[id]">) {
+export async function PATCH(request: Request, { params }: RouteContext<"/api/categories/[id]">) {
   try {
     await requireSuperuser();
     const { id } = await params;
 
-    const existing = await withPrisma((prisma) => prisma.artist.findUnique({ where: { id } }));
+    const existing = await withPrisma((prisma) => prisma.category.findUnique({ where: { id } }));
     if (!existing) {
       return NextResponse.json({ error: "not_found" }, { status: 404 });
     }
@@ -22,11 +22,11 @@ export async function PATCH(request: Request, { params }: RouteContext<"/api/art
       return NextResponse.json({ error: "invalid_body" }, { status: 400 });
     }
 
-    const artist = await withPrisma((prisma) =>
-      prisma.artist.update({ where: { id }, data: { name, active } })
+    const category = await withPrisma((prisma) =>
+      prisma.category.update({ where: { id }, data: { name, active } })
     );
 
-    return NextResponse.json({ artist });
+    return NextResponse.json({ category });
   } catch (error) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -38,19 +38,20 @@ export async function PATCH(request: Request, { params }: RouteContext<"/api/art
   }
 }
 
-// Supprimer un artiste ne supprime pas ses articles : Article.artistId est
-// onDelete: SetNull, les articles restent au catalogue sans artiste assigné.
-export async function DELETE(request: Request, { params }: RouteContext<"/api/artists/[id]">) {
+// Supprimer une catégorie ne supprime pas ses articles : Article.categoryId
+// est onDelete: SetNull, les articles restent au catalogue sans catégorie
+// assignée.
+export async function DELETE(request: Request, { params }: RouteContext<"/api/categories/[id]">) {
   try {
     await requireSuperuser();
     const { id } = await params;
 
-    const existing = await withPrisma((prisma) => prisma.artist.findUnique({ where: { id } }));
+    const existing = await withPrisma((prisma) => prisma.category.findUnique({ where: { id } }));
     if (!existing) {
       return NextResponse.json({ error: "not_found" }, { status: 404 });
     }
 
-    await withPrisma((prisma) => prisma.artist.delete({ where: { id } }));
+    await withPrisma((prisma) => prisma.category.delete({ where: { id } }));
 
     return new NextResponse(null, { status: 204 });
   } catch (error) {

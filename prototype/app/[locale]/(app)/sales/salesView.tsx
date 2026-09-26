@@ -25,6 +25,7 @@ export type SaleForHistory = {
     unitPrice: number;
     quantity: number;
     artistName: string | null;
+    commissionTitle: string | null;
     commissionAmount: number | null;
   }[];
 };
@@ -131,7 +132,8 @@ export function SalesView({ language, sales }: { language: Language; sales: Sale
                         {(item.unitPrice * item.quantity).toFixed(2)} $
                         {item.commissionAmount !== null && (
                           <span className="ml-2 text-xs">
-                            ({getTranslation(salesTranslations.commission, language)}: {item.commissionAmount.toFixed(2)} $)
+                            ({getTranslation(salesTranslations.commission, language)}: {item.commissionAmount.toFixed(2)} $
+                            {item.commissionTitle ? ` · ${item.commissionTitle}` : ""})
                           </span>
                         )}
                       </span>

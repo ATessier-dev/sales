@@ -3,6 +3,7 @@ import type { Translation } from "./types";
 export const posTranslations: Record<string, Translation> = {
   title: { en: "Register", fr: "Caisse" },
   searchPlaceholder: { en: "Search an item...", fr: "Rechercher un article..." },
+  allCategories: { en: "All", fr: "Toutes" },
   cart: { en: "Cart", fr: "Panier" },
   emptyCart: { en: "No item selected yet", fr: "Aucun article sélectionné" },
   subtotal: { en: "Subtotal", fr: "Sous-total" },
@@ -25,4 +26,10 @@ export const posTranslations: Record<string, Translation> = {
   noArticles: { en: "No item in the catalog yet.", fr: "Aucun article au catalogue pour le moment." },
   addToCart: { en: "Add", fr: "Ajouter" },
   removeFromCart: { en: "Remove", fr: "Retirer" },
+  commissionLabel: { en: "Commission", fr: "Commission" },
+  chooseCommission: { en: "Choose a commission...", fr: "Choisir une commission..." },
+  commissionRequiredError: {
+    en: "Choose a commission for every item with an artist before completing the sale.",
+    fr: "Choisissez une commission pour chaque article avec un artiste avant d'enregistrer la vente.",
+  },
 };

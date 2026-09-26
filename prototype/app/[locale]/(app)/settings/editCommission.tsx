@@ -5,15 +5,16 @@ import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getTranslation, artistsTranslations, type Language } from "@/translations";
+import { getTranslation, commissionsTranslations, type Language } from "@/translations";
 
-export type ArtistEntry = {
+export type CommissionEntry = {
   id: string;
-  name: string;
+  title: string;
+  rate: number;
   active: boolean;
 };
 
-export function ArtistForm({
+export function CommissionForm({
   language,
   initialValues,
   onCancel,
@@ -21,12 +22,13 @@ export function ArtistForm({
   onDeleted,
 }: {
   language: Language;
-  initialValues?: ArtistEntry;
+  initialValues?: CommissionEntry;
   onCancel: () => void;
-  onSaved: (artist: ArtistEntry) => void;
+  onSaved: (commission: CommissionEntry) => void;
   onDeleted: () => void;
 }) {
-  const [name, setName] = useState(initialValues?.name ?? "");
+  const [title, setTitle] = useState(initialValues?.title ?? "");
+  const [rate, setRate] = useState(String(initialValues?.rate ?? "30"));
   const [active, setActive] = useState(initialValues?.active ?? true);
   const [error, setError] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -38,10 +40,10 @@ export function ArtistForm({
     setSubmitting(true);
     setError(false);
 
-    const response = await fetch(isEditing ? `/api/artists/${initialValues!.id}` : "/api/artists", {
+    const response = await fetch(isEditing ? `/api/commissions/${initialValues!.id}` : "/api/commissions", {
       method: isEditing ? "PATCH" : "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, active }),
+      body: JSON.stringify({ title, rate: Number(rate), active }),
     });
 
     setSubmitting(false);
@@ -51,8 +53,8 @@ export function ArtistForm({
       return;
     }
 
-    const data = (await response.json()) as { artist: ArtistEntry };
-    onSaved(data.artist);
+    const data = (await response.json()) as { commission: CommissionEntry };
+    onSaved(data.commission);
   }
 
   async function handleDelete() {
@@ -60,7 +62,7 @@ export function ArtistForm({
     setSubmitting(true);
     setError(false);
 
-    const response = await fetch(`/api/artists/${initialValues.id}`, { method: "DELETE" });
+    const response = await fetch(`/api/commissions/${initialValues.id}`, { method: "DELETE" });
 
     setSubmitting(false);
 
@@ -75,8 +77,22 @@ export function ArtistForm({
   return (
     <form onSubmit={handleSubmit} className="w-full space-y-3 rounded-lg border border-border bg-card p-4">
       <div className="space-y-1">
-        <Label htmlFor="artist-name">{getTranslation(artistsTranslations.nameLabel, language)}</Label>
-        <Input id="artist-name" value={name} onChange={(event) => setName(event.target.value)} required autoFocus />
+        <Label htmlFor="commission-title">{getTranslation(commissionsTranslations.titleLabel, language)}</Label>
+        <Input id="commission-title" value={title} onChange={(event) => setTitle(event.target.value)} required autoFocus />
+      </div>
+
+      <div className="space-y-1">
+        <Label htmlFor="commission-rate">{getTranslation(commissionsTranslations.rateLabel, language)}</Label>
+        <Input
+          id="commission-rate"
+          type="number"
+          min={0}
+          max={100}
+          step={0.01}
+          value={rate}
+          onChange={(event) => setRate(event.target.value)}
+          required
+        />
       </div>
 
       {isEditing && (
@@ -87,24 +103,24 @@ export function ArtistForm({
             onChange={(event) => setActive(event.target.checked)}
             className="h-4 w-4 rounded border-input"
           />
-          {getTranslation(artistsTranslations.activeLabel, language)}
+          {getTranslation(commissionsTranslations.activeLabel, language)}
         </label>
       )}
 
-      {error && <p className="text-xs text-destructive">{getTranslation(artistsTranslations.saveError, language)}</p>}
+      {error && <p className="text-xs text-destructive">{getTranslation(commissionsTranslations.saveError, language)}</p>}
 
       <div className="flex flex-wrap justify-end gap-2">
         {isEditing && (
           <Button type="button" variant="destructive" size="sm" onClick={handleDelete} disabled={submitting}>
             <Trash2 className="h-4 w-4" aria-hidden="true" />
-            {getTranslation(artistsTranslations.deleteArtist, language)}
+            {getTranslation(commissionsTranslations.deleteCommission, language)}
           </Button>
         )}
         <Button type="button" variant="ghost" size="sm" onClick={onCancel} disabled={submitting}>
-          {getTranslation(artistsTranslations.cancel, language)}
+          {getTranslation(commissionsTranslations.cancel, language)}
         </Button>
         <Button type="submit" size="sm" disabled={submitting}>
-          {getTranslation(artistsTranslations.save, language)}
+          {getTranslation(commissionsTranslations.save, language)}
         </Button>
       </div>
     </form>

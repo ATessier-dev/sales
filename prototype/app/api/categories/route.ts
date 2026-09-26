@@ -2,15 +2,24 @@ import { NextResponse } from "next/server";
 import { withPrisma } from "@/lib/withPrisma";
 import { requireEmployee, requireSuperuser, UnauthorizedError, ForbiddenError } from "@/lib/auth/requireSession";
 
-export async function GET() {
+// La caisse (/pos) ne doit voir que les catégories actives ; /settings a
+// besoin de tout le catalogue pour pouvoir réactiver une catégorie
+// désactivée.
+export async function GET(request: Request) {
   try {
     await requireEmployee();
 
-    const artists = await withPrisma((prisma) =>
-      prisma.artist.findMany({ orderBy: { sortOrder: "asc" } })
+    const url = new URL(request.url);
+    const activeOnly = url.searchParams.get("all") !== "1";
+
+    const categories = await withPrisma((prisma) =>
+      prisma.category.findMany({
+        where: activeOnly ? { active: true } : undefined,
+        orderBy: { sortOrder: "asc" },
+      })
     );
 
-    return NextResponse.json({ artists });
+    return NextResponse.json({ categories });
   } catch (error) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -30,17 +39,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "invalid_body" }, { status: 400 });
     }
 
-    const lastArtist = await withPrisma((prisma) =>
-      prisma.artist.findFirst({ orderBy: { sortOrder: "desc" } })
+    const lastCategory = await withPrisma((prisma) =>
+      prisma.category.findFirst({ orderBy: { sortOrder: "desc" } })
     );
 
-    const artist = await withPrisma((prisma) =>
-      prisma.artist.create({
-        data: { name, sortOrder: (lastArtist?.sortOrder ?? -1) + 1 },
+    const category = await withPrisma((prisma) =>
+      prisma.category.create({
+        data: { name, sortOrder: (lastCategory?.sortOrder ?? -1) + 1 },
       })
     );
 
-    return NextResponse.json({ artist }, { status: 201 });
+    return NextResponse.json({ category }, { status: 201 });
   } catch (error) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
