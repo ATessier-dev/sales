@@ -26,13 +26,13 @@ async function main() {
   // recréer sous un nouvel id aurait dupliqué la liste sans rien apporter.
   await prisma.employee.upsert({
     where: { id: "cmufw0utu0000rgwdd1qk6yiz" },
-    update: {},
+    update: { sortOrder: 0 },
     create: { id: "cmufw0utu0000rgwdd1qk6yiz", firstName: "Alex", lastName: "Tremblay", sortOrder: 0 },
   });
 
   await prisma.employee.upsert({
     where: { id: "cmufw0v0v0001rgwdb7hg9e38" },
-    update: {},
+    update: { sortOrder: 1 },
     create: { id: "cmufw0v0v0001rgwdb7hg9e38", firstName: "Sam", lastName: "Bouchard", sortOrder: 1 },
   });
 
