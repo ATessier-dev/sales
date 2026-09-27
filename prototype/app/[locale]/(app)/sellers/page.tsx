@@ -15,6 +15,7 @@ export default async function SellersPage({ params }: { params: Promise<{ locale
         createdAt: true,
         employeeId: true,
         employee: { select: { firstName: true, lastName: true } },
+        subtotal: true,
         employeeCommissionAmount: true,
       },
     })
@@ -27,6 +28,9 @@ export default async function SellersPage({ params }: { params: Promise<{ locale
     createdAt: sale.createdAt.toISOString(),
     employeeId: sale.employeeId,
     employeeName: `${sale.employee.firstName} ${sale.employee.lastName}`,
+    // Sous-total avant taxes : même base que le calcul de la commission, les
+    // deux chiffres se répondent directement (voir sellersView.tsx).
+    soldAmount: Number(sale.subtotal),
     commissionAmount: Number(sale.employeeCommissionAmount),
   }));
 
