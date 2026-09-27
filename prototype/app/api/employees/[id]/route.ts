@@ -13,11 +13,18 @@ export async function PATCH(request: Request, { params }: RouteContext<"/api/emp
     }
 
     const body = (await request.json().catch(() => null)) as
-      | { firstName?: unknown; lastName?: unknown; active?: unknown }
+      | { firstName?: unknown; lastName?: unknown; active?: unknown; commissionRate?: unknown }
       | null;
     const firstName = typeof body?.firstName === "string" ? body.firstName.trim() || undefined : undefined;
     const lastName = typeof body?.lastName === "string" ? body.lastName.trim() || undefined : undefined;
     const active = typeof body?.active === "boolean" ? body.active : undefined;
+    const commissionRate =
+      typeof body?.commissionRate === "number" &&
+      Number.isFinite(body.commissionRate) &&
+      body.commissionRate >= 0 &&
+      body.commissionRate <= 100
+        ? body.commissionRate
+        : undefined;
 
     if (body && "firstName" in body && !firstName) {
       return NextResponse.json({ error: "invalid_body" }, { status: 400 });
@@ -27,7 +34,7 @@ export async function PATCH(request: Request, { params }: RouteContext<"/api/emp
     }
 
     const employee = await withPrisma((prisma) =>
-      prisma.employee.update({ where: { id }, data: { firstName, lastName, active } })
+      prisma.employee.update({ where: { id }, data: { firstName, lastName, active, commissionRate } })
     );
 
     return NextResponse.json({ employee });

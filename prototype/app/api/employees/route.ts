@@ -30,10 +30,17 @@ export async function POST(request: Request) {
     await requireSuperuserCode(request);
 
     const body = (await request.json().catch(() => null)) as
-      | { firstName?: unknown; lastName?: unknown }
+      | { firstName?: unknown; lastName?: unknown; commissionRate?: unknown }
       | null;
     const firstName = typeof body?.firstName === "string" ? body.firstName.trim() : "";
     const lastName = typeof body?.lastName === "string" ? body.lastName.trim() : "";
+    const commissionRate =
+      typeof body?.commissionRate === "number" &&
+      Number.isFinite(body.commissionRate) &&
+      body.commissionRate >= 0 &&
+      body.commissionRate <= 100
+        ? body.commissionRate
+        : undefined;
 
     if (!firstName || !lastName) {
       return NextResponse.json({ error: "invalid_body" }, { status: 400 });
@@ -45,7 +52,7 @@ export async function POST(request: Request) {
 
     const employee = await withPrisma((prisma) =>
       prisma.employee.create({
-        data: { firstName, lastName, sortOrder: (lastEmployee?.sortOrder ?? -1) + 1 },
+        data: { firstName, lastName, commissionRate, sortOrder: (lastEmployee?.sortOrder ?? -1) + 1 },
       })
     );
 

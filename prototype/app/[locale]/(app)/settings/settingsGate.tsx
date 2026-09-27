@@ -110,11 +110,20 @@ async function fetchSettingsData(code: string): Promise<SettingsData> {
       active: category.active,
     })),
     employees: employeesJson.employees.map(
-      (employee: { id: string; firstName: string; lastName: string; active: boolean }) => ({
+      (employee: {
+        id: string;
+        firstName: string;
+        lastName: string;
+        active: boolean;
+        commissionRate: string;
+        externalId: string | null;
+      }) => ({
         id: employee.id,
         firstName: employee.firstName,
         lastName: employee.lastName,
         active: employee.active,
+        commissionRate: Number(employee.commissionRate),
+        externalId: employee.externalId,
       })
     ),
   };

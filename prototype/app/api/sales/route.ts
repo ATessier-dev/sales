@@ -147,6 +147,12 @@ export async function POST(request: Request) {
   const qstAmount = roundToCents(taxableSubtotal * QST_RATE);
   const total = roundToCents(subtotal + gstAmount + qstAmount);
 
+  // Commission vendeur : indépendante de la commission de provenance
+  // ci-dessus, jamais déduite de celle-ci, calculée sur le sous-total avant
+  // taxes au taux figé de l'employé au moment de la vente.
+  const employeeCommissionRate = Number(employee.commissionRate);
+  const employeeCommissionAmount = roundToCents(subtotal * (employeeCommissionRate / 100));
+
   const sale = await withPrisma((prisma) =>
     prisma.sale.create({
       data: {
@@ -156,6 +162,8 @@ export async function POST(request: Request) {
         gstAmount,
         qstAmount,
         total,
+        employeeCommissionRate,
+        employeeCommissionAmount,
         requiresDelivery,
         deliveryNote,
         items: { create: saleItemsData },

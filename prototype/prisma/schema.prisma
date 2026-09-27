@@ -25,15 +25,24 @@ enum PaymentMethod {
 /// dans une liste à la caisse sans code. Catalogue superviseur comme
 /// Artist/Commission/Category.
 model Employee {
-  id        String   @id @default(cuid())
-  firstName String   @map("first_name")
-  lastName  String   @map("last_name")
+  id             String   @id @default(cuid())
+  firstName      String   @map("first_name")
+  lastName       String   @map("last_name")
   /// Soft-disable plutôt que suppression, pour que les Sale historiques
   /// gardent une référence employé valide.
-  active    Boolean  @default(true)
-  sortOrder Int      @default(0) @map("sort_order")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  active         Boolean  @default(true)
+  sortOrder      Int      @default(0) @map("sort_order")
+  /// Taux de commission vendeur (%), calculé sur le sous-total avant taxes
+  /// de chaque vente qu'il enregistre (voir Sale.employeeCommissionAmount).
+  /// Distinct de Commission (provenance de l'œuvre) : celle-ci ne réduit en
+  /// rien le calcul de celle-là, les deux coexistent sans interaction.
+  commissionRate Decimal  @default(10) @map("commission_rate") @db.Decimal(5, 2)
+  /// Identifiant de l'employé correspondant dans clockin (app d'horaire),
+  /// pour importer/resynchroniser sans dupliquer (voir lib/clockin.ts).
+  /// Nul pour un employé ajouté manuellement plutôt qu'importé.
+  externalId     String?  @unique @map("external_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   sales Sale[]
 
@@ -45,12 +54,12 @@ model Employee {
 /// ligne de vente selon la provenance de l'œuvre plutôt que déduite de
 /// l'artiste.
 model Artist {
-  id              String   @id @default(cuid())
-  name            String
-  active          Boolean  @default(true)
-  sortOrder       Int      @default(0) @map("sort_order")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id        String   @id @default(cuid())
+  name      String
+  active    Boolean  @default(true)
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   articles Article[]
 
@@ -113,8 +122,8 @@ model Article {
 
   /// Optionnel : un article peut ne pas (encore) avoir d'artiste assigné,
   /// et supprimer un artiste ne doit pas empêcher de garder son catalogue.
-  artistId String?  @map("artist_id")
-  artist   Artist?  @relation(fields: [artistId], references: [id], onDelete: SetNull)
+  artistId String? @map("artist_id")
+  artist   Artist? @relation(fields: [artistId], references: [id], onDelete: SetNull)
 
   /// Optionnel pour la même raison que artistId : supprimer une catégorie ne
   /// doit pas empêcher de garder l'article au catalogue.
@@ -130,20 +139,25 @@ model Article {
 /// recalculés côté serveur à partir des Article/Artist actuels au moment de
 /// la création — jamais depuis les valeurs envoyées par le client.
 model Sale {
-  id               String        @id @default(cuid())
-  employeeId       String        @map("employee_id")
-  employee         Employee      @relation(fields: [employeeId], references: [id])
-  paymentMethod    PaymentMethod @map("payment_method")
-  subtotal         Decimal       @db.Decimal(10, 2)
-  gstAmount        Decimal       @db.Decimal(10, 2) @map("gst_amount")
-  qstAmount        Decimal       @db.Decimal(10, 2) @map("qst_amount")
+  id                       String        @id @default(cuid())
+  employeeId               String        @map("employee_id")
+  employee                 Employee      @relation(fields: [employeeId], references: [id])
+  paymentMethod            PaymentMethod @map("payment_method")
+  subtotal                 Decimal       @db.Decimal(10, 2)
+  gstAmount                Decimal       @map("gst_amount") @db.Decimal(10, 2)
+  qstAmount                Decimal       @map("qst_amount") @db.Decimal(10, 2)
   /// subtotal + gstAmount + qstAmount, dénormalisé pour éviter de le
   /// recalculer à chaque affichage de l'historique des ventes.
-  total            Decimal       @db.Decimal(10, 2)
-  requiresDelivery Boolean       @default(false) @map("requires_delivery")
-  deliveryNote     String?       @db.Text @map("delivery_note")
-  createdAt        DateTime      @default(now()) @map("created_at")
-  updatedAt        DateTime      @updatedAt @map("updated_at")
+  total                    Decimal       @db.Decimal(10, 2)
+  /// Figés au moment de la vente à partir de Employee.commissionRate, comme
+  /// le taux/montant de Commission sur SaleItem : un changement de taux
+  /// plus tard ne doit jamais changer rétroactivement une vente passée.
+  employeeCommissionRate   Decimal       @map("employee_commission_rate") @db.Decimal(5, 2)
+  employeeCommissionAmount Decimal       @map("employee_commission_amount") @db.Decimal(10, 2)
+  requiresDelivery         Boolean       @default(false) @map("requires_delivery")
+  deliveryNote             String?       @map("delivery_note") @db.Text
+  createdAt                DateTime      @default(now()) @map("created_at")
+  updatedAt                DateTime      @updatedAt @map("updated_at")
 
   items SaleItem[]
 
@@ -157,16 +171,16 @@ model Sale {
 /// taux et montant de commission) : un prix ou un taux modifié plus tard ne
 /// doit jamais changer rétroactivement une vente déjà enregistrée.
 model SaleItem {
-  id      String @id @default(cuid())
-  saleId  String @map("sale_id")
-  sale    Sale   @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  saleId String @map("sale_id")
+  sale   Sale   @relation(fields: [saleId], references: [id], onDelete: Cascade)
 
   /// Optionnel : garder la ligne même si l'article catalogue est supprimé
   /// plus tard.
   articleId    String?  @map("article_id")
   article      Article? @relation(fields: [articleId], references: [id], onDelete: SetNull)
   articleTitle String   @map("article_title")
-  unitPrice    Decimal  @db.Decimal(10, 2) @map("unit_price")
+  unitPrice    Decimal  @map("unit_price") @db.Decimal(10, 2)
   quantity     Int      @default(1)
 
   artistId   String? @map("artist_id")
@@ -179,8 +193,8 @@ model SaleItem {
   commissionId     String?     @map("commission_id")
   commission       Commission? @relation(fields: [commissionId], references: [id], onDelete: SetNull)
   commissionTitle  String?     @map("commission_title")
-  commissionRate   Decimal?    @db.Decimal(5, 2) @map("commission_rate")
-  commissionAmount Decimal?    @db.Decimal(10, 2) @map("commission_amount")
+  commissionRate   Decimal?    @map("commission_rate") @db.Decimal(5, 2)
+  commissionAmount Decimal?    @map("commission_amount") @db.Decimal(10, 2)
 
   createdAt DateTime @default(now()) @map("created_at")
 

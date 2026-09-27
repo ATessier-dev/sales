@@ -13,6 +13,8 @@ export type EmployeeEntry = {
   firstName: string;
   lastName: string;
   active: boolean;
+  commissionRate: number;
+  externalId: string | null;
 };
 
 export function EmployeeForm({
@@ -31,6 +33,7 @@ export function EmployeeForm({
   const [firstName, setFirstName] = useState(initialValues?.firstName ?? "");
   const [lastName, setLastName] = useState(initialValues?.lastName ?? "");
   const [active, setActive] = useState(initialValues?.active ?? true);
+  const [commissionRate, setCommissionRate] = useState(String(initialValues?.commissionRate ?? "10"));
   const [error, setError] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const superuserFetch = useSuperuserFetch();
@@ -45,7 +48,7 @@ export function EmployeeForm({
     const response = await superuserFetch(isEditing ? `/api/employees/${initialValues!.id}` : "/api/employees", {
       method: isEditing ? "PATCH" : "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ firstName, lastName, active }),
+      body: JSON.stringify({ firstName, lastName, active, commissionRate: Number(commissionRate) }),
     });
 
     setSubmitting(false);
@@ -55,8 +58,10 @@ export function EmployeeForm({
       return;
     }
 
-    const data = (await response.json()) as { employee: EmployeeEntry };
-    onSaved(data.employee);
+    const data = (await response.json()) as {
+      employee: Omit<EmployeeEntry, "commissionRate"> & { commissionRate: string };
+    };
+    onSaved({ ...data.employee, commissionRate: Number(data.employee.commissionRate) });
   }
 
   async function handleDelete() {
@@ -99,6 +104,26 @@ export function EmployeeForm({
           />
         </div>
       </div>
+
+      <div className="space-y-1">
+        <Label htmlFor="employee-commission-rate">
+          {getTranslation(employeesTranslations.commissionRateLabel, language)}
+        </Label>
+        <Input
+          id="employee-commission-rate"
+          type="number"
+          min={0}
+          max={100}
+          step={0.01}
+          value={commissionRate}
+          onChange={(event) => setCommissionRate(event.target.value)}
+          required
+        />
+      </div>
+
+      {initialValues?.externalId && (
+        <p className="text-xs text-muted-foreground">{getTranslation(employeesTranslations.importedBadge, language)}</p>
+      )}
 
       {isEditing && (
         <label className="flex items-center gap-2 text-sm">

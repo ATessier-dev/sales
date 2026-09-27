@@ -7,6 +7,7 @@ export * from "./articles";
 export * from "./commissions";
 export * from "./categories";
 export * from "./employees";
+export * from "./sellers";
 export * from "./settings";
 export type { Language, Translation } from "./types";
 
