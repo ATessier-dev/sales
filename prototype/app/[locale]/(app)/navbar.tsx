@@ -13,6 +13,7 @@ import { NavLink } from "./navLink";
 // settingsGate.tsx) plutôt que d'être caché selon un rôle.
 const navItems = [
   { href: "/pos", key: "pos" },
+  { href: "/items", key: "items" },
   { href: "/sales", key: "sales" },
   { href: "/reports", key: "reports" },
   { href: "/sellers", key: "sellers" },

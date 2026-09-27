@@ -1,27 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Pencil, Palette } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Plus, Pencil, Tag } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PageHeading } from "@/components/ui/pageHeading";
-import { getTranslation, artistsTranslations, type Language } from "@/translations";
-import { ArtistForm, type ArtistEntry } from "./editArtist";
+import { getTranslation, categoriesTranslations, type Language } from "@/translations";
+import { CategoryForm, type CategoryEntry } from "./editCategory";
 
-export function ArtistsManager({
-  language,
-  artists,
-  onChanged,
-}: {
-  language: Language;
-  artists: ArtistEntry[];
-  onChanged: () => void;
-}) {
-  const [formMode, setFormMode] = useState<"create" | ArtistEntry | null>(null);
+export function CategoriesManager({ language, categories }: { language: Language; categories: CategoryEntry[] }) {
+  const router = useRouter();
+  const [formMode, setFormMode] = useState<"create" | CategoryEntry | null>(null);
 
   function handleSaved() {
     setFormMode(null);
-    onChanged();
+    router.refresh();
   }
 
   return (
@@ -29,20 +23,20 @@ export function ArtistsManager({
       <PageHeading
         title={
           <span className="flex items-center gap-2">
-            <Palette className="h-5 w-5 text-primary" aria-hidden="true" />
-            {getTranslation(artistsTranslations.title, language)}
+            <Tag className="h-5 w-5 text-primary" aria-hidden="true" />
+            {getTranslation(categoriesTranslations.title, language)}
           </span>
         }
         actions={
           <Button size="sm" onClick={() => setFormMode("create")}>
             <Plus className="h-4 w-4" aria-hidden="true" />
-            {getTranslation(artistsTranslations.addArtist, language)}
+            {getTranslation(categoriesTranslations.addCategory, language)}
           </Button>
         }
       />
 
       {formMode && (
-        <ArtistForm
+        <CategoryForm
           language={language}
           initialValues={formMode === "create" ? undefined : formMode}
           onCancel={() => setFormMode(null)}
@@ -52,19 +46,19 @@ export function ArtistsManager({
       )}
 
       <div className="flex w-full flex-col gap-3">
-        {artists.length === 0 ? (
-          <p className="text-xs text-muted-foreground">{getTranslation(artistsTranslations.empty, language)}</p>
+        {categories.length === 0 ? (
+          <p className="text-xs text-muted-foreground">{getTranslation(categoriesTranslations.empty, language)}</p>
         ) : (
-          artists.map((artist) => (
-            <Card key={artist.id} className="w-full">
+          categories.map((category) => (
+            <Card key={category.id} className="w-full">
               <CardHeader className="flex flex-row items-center justify-between space-y-0">
                 <CardTitle className="flex items-center gap-2 text-sm">
-                  {artist.name}
-                  {!artist.active && <span className="text-xs font-normal text-muted-foreground">inactif</span>}
+                  {category.name}
+                  {!category.active && <span className="text-xs font-normal text-muted-foreground">inactif</span>}
                 </CardTitle>
-                <Button variant="outline" size="sm" onClick={() => setFormMode(artist)}>
+                <Button variant="outline" size="sm" onClick={() => setFormMode(category)}>
                   <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
-                  {getTranslation(artistsTranslations.editArtist, language)}
+                  {getTranslation(categoriesTranslations.editCategory, language)}
                 </Button>
               </CardHeader>
             </Card>

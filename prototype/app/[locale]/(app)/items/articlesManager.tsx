@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, Pencil, Image as ImageIcon } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,19 +17,18 @@ export function ArticlesManager({
   articles,
   artists,
   categories,
-  onChanged,
 }: {
   language: Language;
   articles: ArticleEntry[];
   artists: ArtistEntry[];
   categories: CategoryEntry[];
-  onChanged: () => void;
 }) {
+  const router = useRouter();
   const [formMode, setFormMode] = useState<"create" | ArticleEntry | null>(null);
 
   function handleSaved() {
     setFormMode(null);
-    onChanged();
+    router.refresh();
   }
 
   return (

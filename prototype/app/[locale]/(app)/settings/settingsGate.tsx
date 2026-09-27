@@ -9,23 +9,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getTranslation, settingsTranslations, type Language } from "@/translations";
 import { SuperuserCodeProvider } from "@/lib/superuserCodeContext";
-import { ArtistsManager } from "./artistsManager";
-import { ArticlesManager } from "./articlesManager";
 import { CommissionsManager } from "./commissionsManager";
-import { CategoriesManager } from "./categoriesManager";
 import { EmployeesManager } from "./employeesManager";
-import type { ArtistEntry } from "./editArtist";
-import type { ArticleEntry } from "./editArticle";
+import { TaxRatesManager, type TaxRatesEntry } from "./taxRatesManager";
 import type { CommissionEntry } from "./editCommission";
-import type { CategoryEntry } from "./editCategory";
 import type { EmployeeEntry } from "./editEmployee";
 
 type SettingsData = {
-  artists: ArtistEntry[];
-  articles: ArticleEntry[];
   commissions: CommissionEntry[];
-  categories: CategoryEntry[];
   employees: EmployeeEntry[];
+  taxRates: TaxRatesEntry;
 };
 
 async function unlockSuperuser(code: string): Promise<void> {
@@ -39,63 +32,23 @@ async function unlockSuperuser(code: string): Promise<void> {
 
 async function fetchSettingsData(code: string): Promise<SettingsData> {
   const headers = { "x-superuser-code": code };
-  const [artistsRes, articlesRes, commissionsRes, categoriesRes, employeesRes] = await Promise.all([
-    fetch("/api/artists", { headers }),
-    fetch("/api/articles", { headers }),
+  const [commissionsRes, employeesRes, taxRatesRes] = await Promise.all([
     fetch("/api/commissions", { headers }),
-    fetch("/api/categories", { headers }),
     fetch("/api/employees", { headers }),
+    fetch("/api/tax-rates", { headers }),
   ]);
 
-  if (
-    !artistsRes.ok ||
-    !articlesRes.ok ||
-    !commissionsRes.ok ||
-    !categoriesRes.ok ||
-    !employeesRes.ok
-  ) {
+  if (!commissionsRes.ok || !employeesRes.ok || !taxRatesRes.ok) {
     throw new Error("fetch_failed");
   }
 
-  const [artistsJson, articlesJson, commissionsJson, categoriesJson, employeesJson] = await Promise.all([
-    artistsRes.json(),
-    articlesRes.json(),
+  const [commissionsJson, employeesJson, taxRatesJson] = await Promise.all([
     commissionsRes.json(),
-    categoriesRes.json(),
     employeesRes.json(),
+    taxRatesRes.json(),
   ]);
 
   return {
-    artists: artistsJson.artists.map((artist: { id: string; name: string; active: boolean }) => ({
-      id: artist.id,
-      name: artist.name,
-      active: artist.active,
-    })),
-    articles: articlesJson.articles.map(
-      (article: {
-        id: string;
-        title: string;
-        price: string;
-        taxable: boolean;
-        active: boolean;
-        artistId: string | null;
-        artist: { name: string } | null;
-        categoryId: string | null;
-        category: { name: string } | null;
-        imageUrl: string | null;
-      }) => ({
-        id: article.id,
-        title: article.title,
-        price: Number(article.price),
-        taxable: article.taxable,
-        active: article.active,
-        artistId: article.artistId,
-        artistName: article.artist?.name ?? null,
-        categoryId: article.categoryId,
-        categoryName: article.category?.name ?? null,
-        imageUrl: article.imageUrl,
-      })
-    ),
     commissions: commissionsJson.commissions.map(
       (commission: { id: string; title: string; rate: string; active: boolean }) => ({
         id: commission.id,
@@ -104,11 +57,6 @@ async function fetchSettingsData(code: string): Promise<SettingsData> {
         active: commission.active,
       })
     ),
-    categories: categoriesJson.categories.map((category: { id: string; name: string; active: boolean }) => ({
-      id: category.id,
-      name: category.name,
-      active: category.active,
-    })),
     employees: employeesJson.employees.map(
       (employee: {
         id: string;
@@ -126,6 +74,10 @@ async function fetchSettingsData(code: string): Promise<SettingsData> {
         externalId: employee.externalId,
       })
     ),
+    taxRates: {
+      gstRate: Number(taxRatesJson.taxRate.gstRate),
+      qstRate: Number(taxRatesJson.taxRate.qstRate),
+    },
   };
 }
 
@@ -193,22 +145,14 @@ function SettingsContent({ language, code }: { language: Language; code: string 
     return <p className="p-4 text-sm text-destructive">{getTranslation(settingsTranslations.loadError, language)}</p>;
   }
 
-  const { artists, articles, commissions, categories, employees } = query.data;
+  const { commissions, employees, taxRates } = query.data;
 
   return (
     <SuperuserCodeProvider value={code}>
       <main className="mx-auto flex max-w-3xl flex-col items-center gap-6 p-4">
-        <ArtistsManager language={language} artists={artists} onChanged={query.refetch} />
         <EmployeesManager language={language} employees={employees} onChanged={query.refetch} />
-        <CategoriesManager language={language} categories={categories} onChanged={query.refetch} />
-        <ArticlesManager
-          language={language}
-          articles={articles}
-          artists={artists.filter((artist) => artist.active)}
-          categories={categories.filter((category) => category.active)}
-          onChanged={query.refetch}
-        />
         <CommissionsManager language={language} commissions={commissions} onChanged={query.refetch} />
+        <TaxRatesManager language={language} taxRates={taxRates} onChanged={query.refetch} />
       </main>
     </SuperuserCodeProvider>
   );
