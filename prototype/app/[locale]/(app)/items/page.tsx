@@ -53,15 +53,15 @@ export default async function ItemsPage({ params }: { params: Promise<{ locale: 
   }));
 
   return (
-    <main className="mx-auto flex max-w-3xl flex-col items-center gap-6 p-4">
-      <ArtistsManager language={language} artists={artistsForItems} />
-      <CategoriesManager language={language} categories={categoriesForItems} />
+    <main className="mx-auto grid max-w-6xl grid-cols-1 gap-6 p-4 lg:grid-cols-3 lg:items-start">
       <ArticlesManager
         language={language}
         articles={articlesForItems}
         artists={artistsForItems.filter((artist) => artist.active)}
         categories={categoriesForItems.filter((category) => category.active)}
       />
+      <ArtistsManager language={language} artists={artistsForItems} />
+      <CategoriesManager language={language} categories={categoriesForItems} />
     </main>
   );
 }

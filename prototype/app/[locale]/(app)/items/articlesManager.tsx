@@ -32,7 +32,7 @@ export function ArticlesManager({
   }
 
   return (
-    <div className="w-full max-w-md space-y-4">
+    <div className="w-full space-y-4">
       <PageHeading
         title={
           <span className="flex items-center gap-2">
