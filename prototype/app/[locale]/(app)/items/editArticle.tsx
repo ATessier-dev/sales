@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getTranslation, articlesTranslations, type Language } from "@/translations";
 import { articleImageSrc } from "@/lib/articleImage";
-import { useSuperuserCode, useSuperuserFetch } from "@/lib/superuserCodeContext";
 import type { ArtistEntry } from "./editArtist";
 import type { CategoryEntry } from "./editCategory";
 
@@ -52,8 +51,6 @@ export function ArticleForm({
   const [uploadingImage, setUploadingImage] = useState(false);
   const [error, setError] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const superuserCode = useSuperuserCode();
-  const superuserFetch = useSuperuserFetch();
 
   const isEditing = Boolean(initialValues);
 
@@ -68,7 +65,6 @@ export function ArticleForm({
       const blob = await upload(file.name, file, {
         access: "private",
         handleUploadUrl: "/api/articles/image-upload",
-        headers: { "x-superuser-code": superuserCode },
       });
       setImageUrl(blob.url);
     } catch {
@@ -83,7 +79,7 @@ export function ArticleForm({
     setSubmitting(true);
     setError(false);
 
-    const response = await superuserFetch(isEditing ? `/api/articles/${initialValues!.id}` : "/api/articles", {
+    const response = await fetch(isEditing ? `/api/articles/${initialValues!.id}` : "/api/articles", {
       method: isEditing ? "PATCH" : "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -137,7 +133,7 @@ export function ArticleForm({
     setSubmitting(true);
     setError(false);
 
-    const response = await superuserFetch(`/api/articles/${initialValues.id}`, { method: "DELETE" });
+    const response = await fetch(`/api/articles/${initialValues.id}`, { method: "DELETE" });
 
     setSubmitting(false);
 

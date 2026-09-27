@@ -1,4 +1,5 @@
 import { withPrisma } from "@/lib/withPrisma";
+import { getTaxRates } from "@/lib/taxRates";
 import { type Language } from "@/translations";
 import { PosView, type ArticleForPos } from "./posView";
 
@@ -6,7 +7,7 @@ export default async function PosPage({ params }: { params: Promise<{ locale: st
   const { locale } = await params;
   const language = (locale === "en" ? "en" : "fr") as Language;
 
-  const [articles, commissions, categories, employees] = await Promise.all([
+  const [articles, commissions, categories, employees, { gstRate, qstRate }] = await Promise.all([
     withPrisma((prisma) =>
       prisma.article.findMany({
         where: { active: true },
@@ -36,6 +37,7 @@ export default async function PosPage({ params }: { params: Promise<{ locale: st
         select: { id: true, firstName: true, lastName: true },
       })
     ),
+    getTaxRates(),
   ]);
 
   // Decimal n'est pas sérialisable par le RSC boundary — on convertit avant
@@ -60,6 +62,8 @@ export default async function PosPage({ params }: { params: Promise<{ locale: st
         commissions={commissions}
         categories={categories}
         employees={employees}
+        gstRate={gstRate}
+        qstRate={qstRate}
       />
     </main>
   );

@@ -9,6 +9,7 @@ export * from "./categories";
 export * from "./employees";
 export * from "./sellers";
 export * from "./settings";
+export * from "./taxes";
 export type { Language, Translation } from "./types";
 
 import type { Language, Translation } from "./types";

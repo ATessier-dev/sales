@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, Pencil, Tag } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,24 +9,17 @@ import { PageHeading } from "@/components/ui/pageHeading";
 import { getTranslation, categoriesTranslations, type Language } from "@/translations";
 import { CategoryForm, type CategoryEntry } from "./editCategory";
 
-export function CategoriesManager({
-  language,
-  categories,
-  onChanged,
-}: {
-  language: Language;
-  categories: CategoryEntry[];
-  onChanged: () => void;
-}) {
+export function CategoriesManager({ language, categories }: { language: Language; categories: CategoryEntry[] }) {
+  const router = useRouter();
   const [formMode, setFormMode] = useState<"create" | CategoryEntry | null>(null);
 
   function handleSaved() {
     setFormMode(null);
-    onChanged();
+    router.refresh();
   }
 
   return (
-    <div className="w-full max-w-md space-y-4">
+    <div className="w-full space-y-4">
       <PageHeading
         title={
           <span className="flex items-center gap-2">

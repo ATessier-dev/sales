@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, Pencil, Palette } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,24 +9,17 @@ import { PageHeading } from "@/components/ui/pageHeading";
 import { getTranslation, artistsTranslations, type Language } from "@/translations";
 import { ArtistForm, type ArtistEntry } from "./editArtist";
 
-export function ArtistsManager({
-  language,
-  artists,
-  onChanged,
-}: {
-  language: Language;
-  artists: ArtistEntry[];
-  onChanged: () => void;
-}) {
+export function ArtistsManager({ language, artists }: { language: Language; artists: ArtistEntry[] }) {
+  const router = useRouter();
   const [formMode, setFormMode] = useState<"create" | ArtistEntry | null>(null);
 
   function handleSaved() {
     setFormMode(null);
-    onChanged();
+    router.refresh();
   }
 
   return (
-    <div className="w-full max-w-md space-y-4">
+    <div className="w-full space-y-4">
       <PageHeading
         title={
           <span className="flex items-center gap-2">

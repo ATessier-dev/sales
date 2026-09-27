@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { withPrisma } from "@/lib/withPrisma";
-import { GST_RATE, QST_RATE, roundToCents } from "@/lib/tax";
+import { roundToCents } from "@/lib/tax";
+import { getTaxRates } from "@/lib/taxRates";
 
 const PAYMENT_METHODS = ["CASH", "CARD"] as const;
 type PaymentMethod = (typeof PAYMENT_METHODS)[number];
@@ -143,8 +144,9 @@ export async function POST(request: Request) {
     };
   });
 
-  const gstAmount = roundToCents(taxableSubtotal * GST_RATE);
-  const qstAmount = roundToCents(taxableSubtotal * QST_RATE);
+  const { gstRate, qstRate } = await getTaxRates();
+  const gstAmount = roundToCents(taxableSubtotal * (gstRate / 100));
+  const qstAmount = roundToCents(taxableSubtotal * (qstRate / 100));
   const total = roundToCents(subtotal + gstAmount + qstAmount);
 
   // Commission vendeur : indépendante de la commission de provenance

@@ -202,3 +202,17 @@ model SaleItem {
   @@index([artistId])
   @@map("sale_items")
 }
+
+/// Singleton (une seule ligne, id fixe "default") : taux de TPS/TVQ
+/// modifiables par le superuser dans /settings plutôt que codés en dur dans
+/// lib/tax.ts, pour ajuster sans redéployer si les taux changent. Lu via un
+/// upsert (voir getTaxRates()) pour garantir que la ligne existe toujours,
+/// sans dépendre d'un seed.
+model TaxRate {
+  id        String   @id @default("default")
+  gstRate   Decimal  @default(5) @map("gst_rate") @db.Decimal(6, 3)
+  qstRate   Decimal  @default(9.975) @map("qst_rate") @db.Decimal(6, 3)
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("tax_rates")
+}

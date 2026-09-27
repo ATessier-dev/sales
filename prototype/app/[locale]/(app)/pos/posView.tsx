@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeading } from "@/components/ui/pageHeading";
-import { GST_RATE, QST_RATE, roundToCents } from "@/lib/tax";
+import { roundToCents } from "@/lib/tax";
 import { getTranslation, posTranslations, type Language } from "@/translations";
 import { articleImageSrc } from "@/lib/articleImage";
 
@@ -55,12 +55,16 @@ export function PosView({
   commissions,
   categories,
   employees,
+  gstRate,
+  qstRate,
 }: {
   language: Language;
   articles: ArticleForPos[];
   commissions: CommissionOption[];
   categories: CategoryOption[];
   employees: EmployeeOption[];
+  gstRate: number;
+  qstRate: number;
 }) {
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState<string | null>(null);
@@ -144,8 +148,8 @@ export function PosView({
       .filter((line) => line.article.taxable)
       .reduce((sum, line) => sum + line.article.price * line.quantity, 0)
   );
-  const gstAmount = roundToCents(taxableSubtotal * GST_RATE);
-  const qstAmount = roundToCents(taxableSubtotal * QST_RATE);
+  const gstAmount = roundToCents(taxableSubtotal * (gstRate / 100));
+  const qstAmount = roundToCents(taxableSubtotal * (qstRate / 100));
   const total = roundToCents(subtotal + gstAmount + qstAmount);
 
   const missingCommission = cartLines.some((line) => line.article.artistId && !line.commissionId);
